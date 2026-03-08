@@ -1,3 +1,11 @@
+export interface User {
+  id: string
+  googleId: string
+  username: string
+  avatarUrl: string | null
+  createdAt: string
+}
+
 export type TicketType =
   | "bug"
   | "billing"
@@ -7,18 +15,19 @@ export type TicketType =
   | "other";
 
 export interface Ticket {
-  id: string;
-  subject: string;
-  description: string;
-  status: "open" | "in-progress" | "resolved" | "closed";
-  type: TicketType;
-  createdAt: string;
+  id: string
+  userId: string | null
+  subject: string
+  description: string
+  type: TicketType
+  status: 'open' | 'in-progress' | 'resolved' | 'closed'
+  createdAt: string
 }
 
 export interface StorageAdapter {
-  getTickets(): Ticket[];
-  getTicket(id: string): Ticket | null;
-  createTicket(data: Pick<Ticket, "subject" | "description" | "type">): Ticket;
-  updateTicket(id: string, patch: Partial<Ticket>): Ticket | null;
-  deleteTicket(id: string): void;
+  getTickets(): Promise<Ticket[]>
+  getTicket(id: string): Promise<Ticket | null>
+  createTicket(data: Pick<Ticket, 'subject' | 'description' | 'type'> & { userId?: string }): Promise<Ticket>
+  updateTicket(id: string, patch: Partial<Ticket>): Promise<Ticket | null>
+  deleteTicket(id: string): Promise<void>
 }

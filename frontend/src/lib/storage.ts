@@ -1,4 +1,4 @@
-import type { Ticket } from './types.ts'
+import type { Ticket, TicketType } from './types.ts'
 
 export type StorageMode = 'local' | 'remote'
 
@@ -24,10 +24,11 @@ const local = {
   createTicket: (data: Pick<Ticket, 'subject' | 'description' | 'type'>): Ticket => {
     const ticket: Ticket = {
       id: crypto.randomUUID(),
+      userId: null,
       subject: data.subject,
       description: data.description,
+      type: data.type,
       status: 'open',
-      type: 'other',
       createdAt: new Date().toISOString(),
     }
     save([ticket, ...load()])
@@ -49,12 +50,13 @@ const local = {
 
 const remote = {
   getTickets: (): Promise<Ticket[]> =>
-    fetch('/api/tickets').then(r => r.json()),
+    fetch('/api/tickets', { credentials: 'include' }).then(r => r.json()),
 
   createTicket: (data: Pick<Ticket, 'subject' | 'description' | 'type'>): Promise<Ticket> =>
     fetch('/api/tickets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(data),
     }).then(r => r.json()),
 
@@ -62,11 +64,12 @@ const remote = {
     fetch(`/api/tickets/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(patch),
     }).then(r => r.json()),
 
   deleteTicket: (id: string): Promise<void> =>
-    fetch(`/api/tickets/${id}`, { method: 'DELETE' }).then(() => undefined),
+    fetch(`/api/tickets/${id}`, { method: 'DELETE', credentials: 'include' }).then(() => undefined),
 }
 
 // ─── Resolver ─────────────────────────────────────────────────

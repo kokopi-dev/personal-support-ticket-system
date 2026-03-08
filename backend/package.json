@@ -10,10 +10,14 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "latest",
+    "@fastify/session": "^11.1.1",
     "drizzle-orm": "^0.45.1",
     "fastify": "latest",
-    "fastify-plugin": "latest"
+    "fastify-plugin": "latest",
+    "google-auth-library": "^10.6.1",
+    "unique-names-generator": "^4.7.1"
   },
   "devDependencies": {
     "@libsql/client": "^0.17.0",

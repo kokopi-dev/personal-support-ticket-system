@@ -1,4 +1,5 @@
 import { GiteaIcon } from "../icons/gitea";
+import { GithubIcon } from "../icons/github";
 
 export function Navbar() {
   return (
@@ -11,7 +12,11 @@ export function Navbar() {
               derrickgee.dev
           </a>
           <nav className="flex items-center gap-5">
-            <a href="https://git.kokopi.dev/kokopi/personal-support-ticket-system" className="text-xs text-fg-300 transition-colors duration-150 hover:text-fg-100">
+            <a href="https://github.com/kokopi-dev/personal-support-ticket-system" className="flex gap-2 items-center text-xs text-fg-300 transition-colors duration-150 hover:text-fg-100">
+              <GithubIcon className="size-4" />
+              github
+            </a>
+            <a href="https://git.kokopi.dev/kokopi/personal-support-ticket-system" className="flex gap-2 items-center text-xs text-fg-300 transition-colors duration-150 hover:text-fg-100">
               <GiteaIcon className="size-4" />
               gitea
             </a>

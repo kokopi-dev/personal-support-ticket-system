@@ -1,38 +1,54 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../db/index.ts'
 import { tickets } from '../db/schema.ts'
-import type { Ticket, StorageAdapter } from '../types.ts'
+import type { StorageAdapter, Ticket, TicketType } from '../types.ts'
 
 export class SQLiteAdapter implements StorageAdapter {
-  getTickets(): Ticket[] {
-    return db.select().from(tickets).all()
+  async getTickets(): Promise<Ticket[]> {
+    const rows = await db.select().from(tickets).orderBy(tickets.createdAt)
+    return rows.map(toTicket).reverse()
   }
 
-  getTicket(id: string): Ticket | null {
-    return db.select().from(tickets).where(eq(tickets.id, id)).get() ?? null
+  async getTicket(id: string): Promise<Ticket | null> {
+    const rows = await db.select().from(tickets).where(eq(tickets.id, id))
+    return rows[0] ? toTicket(rows[0]) : null
   }
 
-  createTicket({ subject, description, type }: Pick<Ticket, 'subject' | 'description' | 'type'>): Ticket {
-    const ticket: Ticket = {
-      id: crypto.randomUUID(),
-      subject,
-      description,
+  async createTicket(
+    data: Pick<Ticket, 'subject' | 'description' | 'type'> & { userId?: string }
+  ): Promise<Ticket> {
+    const id = crypto.randomUUID()
+    const now = new Date().toISOString()
+    await db.insert(tickets).values({
+      id,
+      userId: data.userId ?? null,
+      subject: data.subject,
+      description: data.description,
+      type: data.type,
       status: 'open',
-      type,
-      createdAt: new Date().toISOString(),
-    }
-    db.insert(tickets).values(ticket).run()
-    return ticket
+      createdAt: now,
+    })
+    return (await this.getTicket(id))!
   }
 
-  updateTicket(id: string, patch: Partial<Ticket>): Ticket | null {
-    const current = this.getTicket(id)
-    if (!current) return null
-    db.update(tickets).set(patch).where(eq(tickets.id, id)).run()
-    return { ...current, ...patch }
+  async updateTicket(id: string, patch: Partial<Ticket>): Promise<Ticket | null> {
+    await db.update(tickets).set(patch).where(eq(tickets.id, id))
+    return this.getTicket(id)
   }
 
-  deleteTicket(id: string): void {
-    db.delete(tickets).where(eq(tickets.id, id)).run()
+  async deleteTicket(id: string): Promise<void> {
+    await db.delete(tickets).where(eq(tickets.id, id))
+  }
+}
+
+function toTicket(row: typeof tickets.$inferSelect): Ticket {
+  return {
+    id: row.id,
+    userId: row.userId,
+    subject: row.subject,
+    description: row.description,
+    type: row.type as TicketType,
+    status: row.status as Ticket['status'],
+    createdAt: row.createdAt,
   }
 }

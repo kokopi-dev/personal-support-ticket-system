@@ -23,3 +23,11 @@ export const tickets = sqliteTable("tickets", {
     .default("open"),
   createdAt: text("createdAt").notNull(),
 });
+
+export const users = sqliteTable('users', {
+  id:        text('id').primaryKey(),                   // internal UUID
+  googleId:  text('googleId').notNull().unique(),       // Google's `sub` claim
+  username:  text('username').notNull().unique(),       // generated: "silent-crimson-falcon"
+  avatarUrl: text('avatarUrl'),                         // Google profile picture
+  createdAt: text('createdAt').notNull(),
+})

@@ -9,13 +9,11 @@ declare module 'fastify' {
   }
 }
 
-const adapter: StorageAdapter = new SQLiteAdapter()
+const adapter = new SQLiteAdapter()
 
-const plugin: FastifyPluginAsync = async (app) => {
-  app.decorateRequest('storage', null)
-  app.addHook('onRequest', async (req) => {
-    req.storage = adapter
-  })
-}
-
-export const storageMiddleware = fp(plugin)
+export const storageMiddleware: FastifyPluginAsync = fp(async (app) => {
+  app.decorateRequest('storage', { getter: () => adapter })
+  // app.addHook('onRequest', async (req) => {
+  //   req.storage = adapter
+  // })
+})
