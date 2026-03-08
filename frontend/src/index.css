@@ -1,0 +1,41 @@
+@import "tailwindcss";
+@font-face {
+  font-family: "Geist";
+  font-style: normal;
+  font-weight: 100 900; /* Variable font supports full range */
+  font-display: swap;
+  src: url("/fonts/Geist.woff2") format("woff2");
+}
+
+@theme {
+  --font-sans: "Geist", system-ui, sans-serif;
+  --color-bg-100: oklch(0.09 0 0);
+  --color-bg-200: oklch(0.12 0 0);
+  --color-bg-300: oklch(0.15 0 0);
+  --color-bg-400: oklch(0.18 0 0);
+
+  --color-fg-100: oklch(0.92 0 0);
+  --color-fg-200: oklch(0.6 0 0);
+  --color-fg-300: oklch(0.4 0 0);
+
+  --color-border-100: oklch(1 0 0 / 9%);
+  --color-border-200: oklch(1 0 0 / 30%);
+
+  --color-ring-100: oklch(0.55 0 0);
+
+  --font-sans: "Inter", sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--color-bg-100);
+  color: var(--color-fg-100);
+  font-family: var(--font-sans);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}

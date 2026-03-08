@@ -1,0 +1,1 @@
+ALTER TABLE `tickets` ADD `type` text DEFAULT 'other' NOT NULL;

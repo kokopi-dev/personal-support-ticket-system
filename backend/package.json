@@ -1,0 +1,24 @@
+{
+  "name": "personal-support-ticket-system-backend",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "build": "tsc",
+    "start": "bun dist/index.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@fastify/cors": "latest",
+    "drizzle-orm": "^0.45.1",
+    "fastify": "latest",
+    "fastify-plugin": "latest"
+  },
+  "devDependencies": {
+    "@libsql/client": "^0.17.0",
+    "@types/node": "^25.3.5",
+    "drizzle-kit": "^0.31.9",
+    "typescript": "^5.9.3"
+  }
+}
