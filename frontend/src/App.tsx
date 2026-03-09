@@ -55,8 +55,8 @@ function SupportApp() {
       }
     >
       <Tabs tabs={tabs} active={activeTab} onChange={setActiveTab} />
-      {activeTab === 'tickets' && <UserPage />}
-      {activeTab === 'admin' && <AdminPage />}
+      {activeTab === 'tickets' && <UserPage isAuthenticated={authState === 'authenticated'} />}
+      {activeTab === 'admin' && <AdminPage isAuthenticated={authState === 'authenticated'} />}
     </Layout>
   )
 }

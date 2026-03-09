@@ -17,12 +17,16 @@ function StatCard({ label, value }: StatCardProps) {
   )
 }
 
-export function AdminPage() {
+interface AdminPageProps {
+  isAuthenticated: boolean
+}
+
+export function AdminPage({ isAuthenticated }: AdminPageProps) {
   const [tickets, setTickets] = useState<Ticket[]>([])
 
   useEffect(() => {
-    storage.getTickets().then(setTickets)
-  }, [])
+    storage.getAllTickets(isAuthenticated).then(setTickets)
+  }, [isAuthenticated])
 
   const stats = {
     total:      tickets.length,
@@ -35,7 +39,9 @@ export function AdminPage() {
     <>
       <div className="mb-6">
         <h1 className="text-lg font-semibold text-fg-100">Admin</h1>
-        <p className="mt-0.5 text-sm text-fg-300">All tickets across the system</p>
+        <p className="mt-0.5 text-sm text-fg-300">
+          {isAuthenticated ? 'All tickets across the system' : 'Your local tickets'}
+        </p>
       </div>
 
       <div className="mb-6 grid grid-cols-4 gap-3">

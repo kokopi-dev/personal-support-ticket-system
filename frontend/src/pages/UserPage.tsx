@@ -6,14 +6,19 @@ import { NewTicketForm } from '../components/tickets/NewTicketForm.tsx'
 import { useModal } from '../hooks/useModal.ts'
 import { storage } from '../lib/storage.ts'
 import type { Ticket } from '../lib/types.ts'
+import { PlusIcon } from '../components/icons/plus.tsx'
 
-export function UserPage() {
+interface UserPageProps {
+  isAuthenticated: boolean
+}
+
+export function UserPage({ isAuthenticated }: UserPageProps) {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const newTicketModal = useModal()
 
   useEffect(() => {
     storage.getTickets().then(setTickets)
-  }, [])
+  }, [isAuthenticated])
 
   const handleCreate = async (form: Pick<Ticket, 'subject' | 'description' | 'type'>) => {
     const ticket = await storage.createTicket(form)
@@ -36,9 +41,7 @@ export function UserPage() {
           </p>
         </div>
         <Button onClick={newTicketModal.open}>
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
+          <PlusIcon className="size-4" />
           New Ticket
         </Button>
       </div>
