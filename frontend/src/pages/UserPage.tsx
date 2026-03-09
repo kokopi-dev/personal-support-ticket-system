@@ -77,7 +77,7 @@ export function UserPage({ isAuthenticated }: UserPageProps) {
   const showLimitScreen = atLimit || serverLimitHit
 
   useEffect(() => {
-    storage.getTickets().then(setTickets)
+    storage.getTickets(isAuthenticated).then(setTickets)
   }, [isAuthenticated])
 
   const handleNewClose = () => {
@@ -99,7 +99,7 @@ export function UserPage({ isAuthenticated }: UserPageProps) {
 
   const handleCloseTicket = async (id: string) => {
     try {
-      const updated = await storage.updateTicket(id, { status: 'closed' })
+      const updated = await storage.updateTicket(isAuthenticated, id, { status: 'closed' })
       if (updated) {
         setTickets(prev => prev.map(t => t.id === id ? updated : t))
         setSelectedTicket(updated)
@@ -113,16 +113,15 @@ export function UserPage({ isAuthenticated }: UserPageProps) {
     if (atLimit) return
     setContentError(null)
     try {
-      const ticket = await storage.createTicket(form)
+      const ticket = await storage.createTicket(isAuthenticated, form)
       setTickets(prev => [ticket, ...prev])
       newTicketModal.close()
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.code === 'ticket_limit_reached') {
           setServerLimitHit(true)
-          storage.getTickets().then(setTickets)
+          storage.getTickets(isAuthenticated).then(setTickets)
         } else if (err.code === 'profanity') {
-          // Surface the server's message directly — it says which field was flagged
           setContentError(err.message)
         }
       }

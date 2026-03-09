@@ -188,8 +188,7 @@ export function AdminStatsPage({ isAuthenticated }: AdminStatsPageProps) {
         }
         setTickets(all)
       } else {
-        // Guest — use their local tickets only
-        const local = await storage.getTickets()
+        const local = await storage.getTickets(false)
         setTickets(local)
       }
       setLoading(false)

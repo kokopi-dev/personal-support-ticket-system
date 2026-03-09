@@ -182,7 +182,7 @@ export function AdminPage({ isAuthenticated, user }: AdminPageProps) {
 
   const handleCloseTicket = async (id: string) => {
     try {
-      const updated = await storage.updateTicket(id, { status: 'closed' })
+      const updated = await storage.updateTicket(isAuthenticated, id, { status: 'closed' })
       if (updated) {
         setResult(prev => ({ ...prev, data: prev.data.map(t => t.id === id ? updated : t) }))
         setSelectedTicket(updated)
@@ -194,7 +194,7 @@ export function AdminPage({ isAuthenticated, user }: AdminPageProps) {
 
   const handleReopenTicket = async (id: string) => {
     try {
-      const updated = await storage.updateTicket(id, { status: 'open' })
+      const updated = await storage.updateTicket(isAuthenticated, id, { status: 'open' })
       if (updated) {
         setResult(prev => ({ ...prev, data: prev.data.map(t => t.id === id ? updated : t) }))
         setSelectedTicket(updated)
@@ -206,7 +206,7 @@ export function AdminPage({ isAuthenticated, user }: AdminPageProps) {
 
   const handleDeleteTicket = async (id: string) => {
     try {
-      await storage.deleteTicket(id)
+      await storage.deleteTicket(isAuthenticated, id)
       handleDetailClose()
       await refetch()
     } catch {
@@ -218,7 +218,7 @@ export function AdminPage({ isAuthenticated, user }: AdminPageProps) {
     if (selection.size === 0) return
     setBatchDeleting(true)
     try {
-      await Promise.all([...selection].map(id => storage.deleteTicket(id)))
+      await Promise.all([...selection].map(id => storage.deleteTicket(isAuthenticated, id)))
       setSelection(new Set())
       await refetch()
     } finally {
