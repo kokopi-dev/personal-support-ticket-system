@@ -1,3 +1,4 @@
+import { useRef, useEffect } from 'react'
 import { Badge } from '../ui/Badge.tsx'
 import { Button } from '../ui/Button.tsx'
 import { parseDescription } from '../../lib/ticket.ts'
@@ -7,6 +8,43 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric'
   })
+}
+
+function Checkbox({
+  checked,
+  indeterminate = false,
+  disabled = false,
+  onChange,
+  ariaLabel,
+}: {
+  checked: boolean
+  indeterminate?: boolean
+  disabled?: boolean
+  onChange: (checked: boolean) => void
+  ariaLabel: string
+}) {
+  const ref = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = indeterminate
+  }, [indeterminate])
+
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      aria-label={ariaLabel}
+      checked={checked}
+      disabled={disabled}
+      onChange={e => onChange(e.target.checked)}
+      className={`
+        h-3.5 w-3.5 rounded border border-border-200 bg-bg-300
+        checked:bg-fg-100 checked:border-fg-100
+        focus-visible:ring-2 focus-visible:ring-ring-100 focus-visible:outline-none
+        ${disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
+      `}
+    />
+  )
 }
 
 interface PaginationProps {
@@ -22,13 +60,49 @@ interface AdminTableProps {
   tickets: Ticket[]
   onOpen: (ticket: Ticket) => void
   currentUserId: string | null
+  selection: Set<string>
+  onSelectionChange: (selection: Set<string>) => void
   pagination: PaginationProps
 }
 
-export function AdminTable({ tickets, onOpen, currentUserId, pagination }: AdminTableProps) {
+export function AdminTable({
+  tickets,
+  onOpen,
+  currentUserId,
+  selection,
+  onSelectionChange,
+  pagination,
+}: AdminTableProps) {
   const { page, totalPages, total, pageSize, onPrev, onNext } = pagination
   const start = (page - 1) * pageSize + 1
   const end = Math.min(page * pageSize, total)
+
+  // When unauthenticated, currentUserId is null and all local tickets have userId: null —
+  // the user owns all of them. When authenticated, only match on userId.
+  const isOwned = (ticket: Ticket) =>
+    currentUserId === null ? true : ticket.userId === currentUserId
+
+  const selectableIds = tickets.filter(isOwned).map(t => t.id)
+
+  const selectedOnPage = selectableIds.filter(id => selection.has(id))
+  const allSelected = selectableIds.length > 0 && selectedOnPage.length === selectableIds.length
+  const someSelected = selectedOnPage.length > 0 && !allSelected
+
+  const handleHeaderChange = (checked: boolean) => {
+    const next = new Set(selection)
+    if (checked) {
+      selectableIds.forEach(id => next.add(id))
+    } else {
+      selectableIds.forEach(id => next.delete(id))
+    }
+    onSelectionChange(next)
+  }
+
+  const handleRowChange = (id: string, checked: boolean) => {
+    const next = new Set(selection)
+    checked ? next.add(id) : next.delete(id)
+    onSelectionChange(next)
+  }
 
   if (tickets.length === 0 && total === 0) {
     return (
@@ -45,6 +119,16 @@ export function AdminTable({ tickets, onOpen, currentUserId, pagination }: Admin
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border-100 bg-bg-200">
+            {/* Select-all checkbox */}
+            <th className="w-10 px-4 py-3">
+              <Checkbox
+                checked={allSelected}
+                indeterminate={someSelected}
+                disabled={selectableIds.length === 0}
+                onChange={handleHeaderChange}
+                ariaLabel="Select all owned tickets on this page"
+              />
+            </th>
             {(['Subject', 'User', 'Type', 'Status', ...(hasBilling ? ['Transaction'] : []), 'Description', 'Created'] as const).map(col => (
               <th
                 key={col}
@@ -60,17 +144,31 @@ export function AdminTable({ tickets, onOpen, currentUserId, pagination }: Admin
           {tickets.map(ticket => {
             const { txnId, txnLine, body: displayDescription } = parseDescription(ticket.description)
             const hasTxn = ticket.type === 'billing' && txnId !== null
+            const owned = isOwned(ticket)
+            const isSelected = selection.has(ticket.id)
 
             return (
               <tr
                 key={ticket.id}
-                className="transition-colors hover:bg-bg-200 cursor-pointer"
+                className={`transition-colors cursor-pointer ${isSelected ? 'bg-bg-200' : 'hover:bg-bg-200'}`}
                 onClick={() => onOpen(ticket)}
               >
+                {/* Row checkbox — stop propagation so clicking it doesn't open the modal */}
+                <td
+                  className="w-10 px-4 py-3"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <Checkbox
+                    checked={isSelected}
+                    disabled={!owned}
+                    onChange={checked => handleRowChange(ticket.id, checked)}
+                    ariaLabel={`Select ticket: ${ticket.subject}`}
+                  />
+                </td>
                 <td className="px-4 py-3 font-medium text-fg-100">
                   <div className="flex items-center gap-2">
                     {ticket.subject}
-                    {currentUserId && ticket.userId === currentUserId && (
+                    {owned && (
                       <span className="inline-flex items-center rounded-full border border-border-100 bg-bg-300 px-1.5 py-0.5 text-[10px] font-medium text-fg-300">
                         mine
                       </span>

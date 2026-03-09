@@ -67,6 +67,7 @@ export function UserPage({ isAuthenticated }: UserPageProps) {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [serverLimitHit, setServerLimitHit] = useState(false)
   const [contentError, setContentError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null)
 
   const newTicketModal = useModal()
@@ -93,13 +94,18 @@ export function UserPage({ isAuthenticated }: UserPageProps) {
   const handleDetailClose = () => {
     detailModal.close()
     setSelectedTicket(null)
+    setActionError(null)
   }
 
   const handleCloseTicket = async (id: string) => {
-    const updated = await storage.updateTicket(id, { status: 'closed' })
-    if (updated) {
-      setTickets(prev => prev.map(t => t.id === id ? updated : t))
-      setSelectedTicket(updated)
+    try {
+      const updated = await storage.updateTicket(id, { status: 'closed' })
+      if (updated) {
+        setTickets(prev => prev.map(t => t.id === id ? updated : t))
+        setSelectedTicket(updated)
+      }
+    } catch {
+      setActionError('Failed to close ticket. Please try again.')
     }
   }
 
@@ -178,7 +184,17 @@ export function UserPage({ isAuthenticated }: UserPageProps) {
         onClose={handleDetailClose}
         title={selectedTicket?.subject ?? ''}
       >
-        {selectedTicket && <TicketDetail ticket={selectedTicket} onCloseTicket={handleCloseTicket} />}
+        {selectedTicket && (
+          <>
+            {actionError && (
+              <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-red-500/30 bg-red-500/10 px-3.5 py-3">
+                <span className="mt-0.5 text-sm">⚠️</span>
+                <p className="text-xs leading-relaxed text-red-400">{actionError}</p>
+              </div>
+            )}
+            <TicketDetail ticket={selectedTicket} onCloseTicket={handleCloseTicket} />
+          </>
+        )}
       </Modal>
     </>
   )
