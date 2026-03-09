@@ -1,5 +1,4 @@
 import { Badge } from '../ui/Badge.tsx'
-import { Button } from '../ui/Button.tsx'
 import type { Ticket } from '../../lib/types.ts'
 
 function formatDate(iso: string): string {
@@ -29,9 +28,9 @@ export function TicketTable({ tickets, onOpen }: TicketTableProps) {
         <thead>
           <tr className="border-b border-border-100 bg-bg-200">
             <th className="px-4 py-3 text-left text-xs font-medium text-fg-300 uppercase tracking-wider">Subject</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-fg-300 uppercase tracking-wider">Type</th>
             <th className="px-4 py-3 text-left text-xs font-medium text-fg-300 uppercase tracking-wider">Status</th>
             <th className="px-4 py-3 text-left text-xs font-medium text-fg-300 uppercase tracking-wider">Created</th>
-            <th className="px-4 py-3" />
           </tr>
         </thead>
         <tbody className="divide-y divide-border-100 bg-bg-100">
@@ -42,16 +41,9 @@ export function TicketTable({ tickets, onOpen }: TicketTableProps) {
               onClick={() => onOpen(ticket)}
             >
               <td className="px-4 py-3 text-fg-100">{ticket.subject}</td>
+              <td className="px-4 py-3 text-xs capitalize text-fg-200">{ticket.type.replace('-', ' ')}</td>
               <td className="px-4 py-3"><Badge status={ticket.status} /></td>
               <td className="px-4 py-3 text-xs text-fg-300">{formatDate(ticket.createdAt)}</td>
-              <td className="px-4 py-3 text-right">
-                <Button
-                  variant="ghost"
-                  onClick={e => { e.stopPropagation(); onOpen(ticket) }}
-                >
-                  Open
-                </Button>
-              </td>
             </tr>
           ))}
         </tbody>

@@ -18,21 +18,21 @@ function StatCard({ label, value }: { label: string; value: number }) {
 }
 
 const STATUS_OPTIONS: { value: Ticket['status'] | ''; label: string }[] = [
-  { value: '',            label: 'All statuses' },
-  { value: 'open',        label: 'Open' },
+  { value: '', label: 'All statuses' },
+  { value: 'open', label: 'Open' },
   { value: 'in-progress', label: 'In progress' },
-  { value: 'resolved',    label: 'Resolved' },
-  { value: 'closed',      label: 'Closed' },
+  { value: 'resolved', label: 'Resolved' },
+  { value: 'closed', label: 'Closed' },
 ]
 
 const TYPE_OPTIONS: { value: Ticket['type'] | ''; label: string }[] = [
-  { value: '',                label: 'All types' },
-  { value: 'bug',             label: 'Bug' },
-  { value: 'billing',         label: 'Billing' },
-  { value: 'account',         label: 'Account' },
+  { value: '', label: 'All types' },
+  { value: 'bug', label: 'Bug' },
+  { value: 'billing', label: 'Billing' },
+  { value: 'account', label: 'Account' },
   { value: 'feature-request', label: 'Feature request' },
-  { value: 'feedback',        label: 'Feedback' },
-  { value: 'other',           label: 'Other' },
+  { value: 'feedback', label: 'Feedback' },
+  { value: 'other', label: 'Other' },
 ]
 
 const selectClass = `
@@ -91,8 +91,8 @@ function FilterBar({ filters, isAuthenticated, onChange }: FilterBarProps) {
           `}
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <circle cx="6" cy="4" r="2.5" stroke="currentColor" strokeWidth="1.3"/>
-            <path d="M1.5 10.5c0-2.21 2.015-4 4.5-4s4.5 1.79 4.5 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+            <circle cx="6" cy="4" r="2.5" stroke="currentColor" strokeWidth="1.3" />
+            <path d="M1.5 10.5c0-2.21 2.015-4 4.5-4s4.5 1.79 4.5 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
           </svg>
           My tickets
         </button>
@@ -118,7 +118,7 @@ function ChevronIcon() {
       className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-fg-300"
       width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"
     >
-      <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -154,10 +154,10 @@ export function AdminPage({ isAuthenticated, user }: AdminPageProps) {
   }
 
   const stats = {
-    total:      result.total,
-    open:       result.data.filter(t => t.status === 'open').length,
+    total: result.total,
+    open: result.data.filter(t => t.status === 'open').length,
     inProgress: result.data.filter(t => t.status === 'in-progress').length,
-    resolved:   result.data.filter(t => t.status === 'resolved').length,
+    resolved: result.data.filter(t => t.status === 'resolved').length,
   }
 
   const handleOpen = (ticket: Ticket) => {
@@ -204,6 +204,18 @@ export function AdminPage({ isAuthenticated, user }: AdminPageProps) {
     }
   }
 
+  const handleStatusChange = async (id: string, status: Ticket['status']) => {
+    try {
+      const updated = await storage.updateTicket(isAuthenticated, id, { status })
+      if (updated) {
+        setResult(prev => ({ ...prev, data: prev.data.map(t => t.id === id ? updated : t) }))
+        setSelectedTicket(updated)
+      }
+    } catch {
+      setActionError('Failed to update ticket status. Please try again.')
+    }
+  }
+
   const handleDeleteTicket = async (id: string) => {
     try {
       await storage.deleteTicket(isAuthenticated, id)
@@ -241,10 +253,10 @@ export function AdminPage({ isAuthenticated, user }: AdminPageProps) {
       </div>
 
       <div className="mb-6 grid grid-cols-4 gap-3">
-        <StatCard label="Total"       value={stats.total} />
-        <StatCard label="Open"        value={stats.open} />
+        <StatCard label="Total" value={stats.total} />
+        <StatCard label="Open" value={stats.open} />
         <StatCard label="In Progress" value={stats.inProgress} />
-        <StatCard label="Resolved"    value={stats.resolved} />
+        <StatCard label="Resolved" value={stats.resolved} />
       </div>
 
       <FilterBar
@@ -317,6 +329,7 @@ export function AdminPage({ isAuthenticated, user }: AdminPageProps) {
               onCloseTicket={canModify(selectedTicket) ? handleCloseTicket : undefined}
               onReopenTicket={canModify(selectedTicket) ? handleReopenTicket : undefined}
               onDeleteTicket={canModify(selectedTicket) ? handleDeleteTicket : undefined}
+              onStatusChange={canModify(selectedTicket) ? handleStatusChange : undefined}
             />
           </>
         )}

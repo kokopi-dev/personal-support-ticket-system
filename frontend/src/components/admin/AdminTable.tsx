@@ -137,7 +137,6 @@ export function AdminTable({
                 {col}
               </th>
             ))}
-            <th className="px-4 py-3" />
           </tr>
         </thead>
         <tbody className="divide-y divide-border-100 bg-bg-100">
@@ -203,14 +202,6 @@ export function AdminTable({
                 <td className="whitespace-nowrap px-4 py-3 text-xs text-fg-300">
                   {formatDate(ticket.createdAt)}
                 </td>
-                <td className="px-4 py-3 text-right">
-                  <Button
-                    variant="ghost"
-                    onClick={e => { e.stopPropagation(); onOpen(ticket) }}
-                  >
-                    Open
-                  </Button>
-                </td>
               </tr>
             )
           })}
@@ -225,7 +216,7 @@ export function AdminTable({
         <div className="flex items-center gap-2">
           <Button variant="ghost" onClick={onPrev} disabled={page <= 1}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M9 3L5 7l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M9 3L5 7l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             Prev
           </Button>
@@ -235,7 +226,7 @@ export function AdminTable({
           <Button variant="ghost" onClick={onNext} disabled={page >= totalPages}>
             Next
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </Button>
         </div>

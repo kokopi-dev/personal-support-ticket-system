@@ -91,7 +91,8 @@ function HoldButton({ onComplete, label, completingLabel, icon, ariaLabel }: Hol
       onTouchEnd={cancel}
       disabled={completing}
       className={`
-        relative inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm
+        relative inline-flex w-full items-center justify-center gap-2 rounded-md px-3 py-2.5 text-sm
+        sm:w-auto sm:py-1.5
         select-none transition-colors duration-150 cursor-pointer
         disabled:opacity-40 disabled:cursor-not-allowed
         ${isHolding
@@ -198,6 +199,7 @@ interface TicketDetailProps {
   onCloseTicket?: (id: string) => Promise<void>
   onDeleteTicket?: (id: string) => Promise<void>
   onReopenTicket?: (id: string) => Promise<void>
+  onStatusChange?: (id: string, status: Ticket['status']) => Promise<void>
 }
 
 export function TicketDetail({
@@ -208,17 +210,19 @@ export function TicketDetail({
   onCloseTicket,
   onDeleteTicket,
   onReopenTicket,
+  onStatusChange,
 }: TicketDetailProps) {
   const { txnId, body } = parseDescription(ticket.description)
   const txn = txnId ? FAKE_TRANSACTIONS.find(t => t.id === txnId) ?? null : null
   const isClosed = ticket.status === 'closed'
-  const hasAnyAction = onCloseTicket || onReopenTicket || onDeleteTicket
+  const hasAnyAction = onCloseTicket || onReopenTicket || onDeleteTicket || onStatusChange
 
   const REPLY_LIMIT = 20
 
   const [replies, setReplies] = useState<Reply[]>([])
   const [repliesLoading, setRepliesLoading] = useState(true)
   const [replyLimitHit, setReplyLimitHit] = useState(false)
+  const [statusChanging, setStatusChanging] = useState(false)
   const threadEndRef = useRef<HTMLDivElement>(null)
 
   const atReplyLimit = replies.length >= REPLY_LIMIT || replyLimitHit
@@ -248,12 +252,60 @@ export function TicketDetail({
     }
   }
 
+  const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (!onStatusChange) return
+    setStatusChanging(true)
+    try {
+      await onStatusChange(ticket.id, e.target.value as Ticket['status'])
+    } finally {
+      setStatusChanging(false)
+    }
+  }
+
+  const STATUS_OPTIONS: { value: Ticket['status']; label: string }[] = [
+    { value: 'open', label: 'Open' },
+    { value: 'in-progress', label: 'In Progress' },
+    { value: 'resolved', label: 'Resolved' },
+    { value: 'closed', label: 'Closed' },
+  ]
+
   return (
     <div className="flex flex-col gap-4 max-h-[75vh]">
 
       {/* Status + meta row */}
       <div className="flex items-center gap-2 flex-wrap shrink-0">
-        <Badge status={ticket.status} />
+        {onStatusChange ? (
+          <div className="relative">
+            {(() => {
+              const statusStyles: Record<Ticket['status'], string> = {
+                'open': 'bg-blue-950/60 text-blue-400 border-blue-900/60',
+                'in-progress': 'bg-amber-950/60 text-amber-400 border-amber-900/60',
+                'resolved': 'bg-green-950/60 text-green-400 border-green-900/60',
+                'closed': 'bg-bg-300 text-fg-300 border-border-100',
+              }
+              return (
+                <select
+                  value={ticket.status}
+                  onChange={handleStatusChange}
+                  disabled={statusChanging}
+                  className={`appearance-none rounded-full border pl-2.5 pr-6 py-0.5 text-xs font-medium cursor-pointer transition-colors outline-none disabled:opacity-50 focus:ring-1 focus:ring-ring-100 ${statusStyles[ticket.status]}`}
+                >
+                  {STATUS_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              )
+            })()}
+            <svg
+              className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-fg-300"
+              width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"
+            >
+              <path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        ) : (
+          <Badge status={ticket.status} />
+        )}
         <span className="text-xs text-fg-300">·</span>
         <span className="text-xs text-fg-200 capitalize">{TYPE_LABELS[ticket.type]}</span>
         <span className="text-xs text-fg-300">·</span>
@@ -330,9 +382,9 @@ export function TicketDetail({
       )}
 
       {/* Footer: ticket ID + actions */}
-      <div className="flex items-center justify-between border-t border-border-100 pt-3 shrink-0">
-        <p className="text-xs text-fg-300 font-mono">ID: {ticket.id}</p>
-        <div className="flex items-center gap-1">
+      <div className="flex flex-col gap-2 border-t border-border-100 pt-3 shrink-0 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-[11px] text-fg-300/60 font-mono hidden sm:block">ID: {ticket.id}</p>
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-end">
           {!hasAnyAction && (
             <span className="text-xs text-fg-300 italic">Read only</span>
           )}
@@ -369,6 +421,7 @@ export function TicketDetail({
             />
           )}
         </div>
+        <p className="text-[11px] text-fg-300/60 font-mono sm:hidden">ID: {ticket.id}</p>
       </div>
 
     </div>
