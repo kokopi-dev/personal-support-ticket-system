@@ -191,7 +191,12 @@ export function UserPage({ isAuthenticated }: UserPageProps) {
                 <p className="text-xs leading-relaxed text-red-400">{actionError}</p>
               </div>
             )}
-            <TicketDetail ticket={selectedTicket} onCloseTicket={handleCloseTicket} />
+            <TicketDetail
+              ticket={selectedTicket}
+              isAuthenticated={isAuthenticated}
+              canReply={true}
+              onCloseTicket={handleCloseTicket}
+            />
           </>
         )}
       </Modal>

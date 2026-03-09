@@ -38,6 +38,16 @@ export interface PaginatedTickets {
   total: number
 }
 
+export interface Reply {
+  id: string
+  ticketId: string
+  userId: string | null
+  username: string | null
+  body: string
+  authorRole: 'user' | 'support'
+  createdAt: string
+}
+
 export interface StorageAdapter {
   getTickets(): Promise<Ticket[]>
   getTicketsByUser(userId: string): Promise<Ticket[]>
@@ -47,4 +57,6 @@ export interface StorageAdapter {
   createTicket(data: Pick<Ticket, 'subject' | 'description' | 'type'> & { userId?: string }): Promise<Ticket>
   updateTicket(id: string, patch: Partial<Ticket>): Promise<Ticket | null>
   deleteTicket(id: string): Promise<void>
+  getReplies(ticketId: string): Promise<Reply[]>
+  createReply(data: { ticketId: string; body: string; userId?: string; authorRole: Reply['authorRole'] }): Promise<Reply>
 }

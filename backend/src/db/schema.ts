@@ -26,6 +26,16 @@ export const tickets = sqliteTable("tickets", {
   createdAt: text("createdAt").notNull(),
 });
 
+export const ticketReplies = sqliteTable("ticket_replies", {
+  id: text("id").primaryKey(),
+  ticketId: text("ticketId").notNull().references(() => tickets.id, { onDelete: "cascade" }),
+  userId: text("userId").references(() => users.id, { onDelete: "set null" }),
+  body: text("body").notNull(),
+  // "user" = ticket owner or guest, "support" = another authenticated user
+  authorRole: text("authorRole", { enum: ["user", "support"] }).notNull().default("user"),
+  createdAt: text("createdAt").notNull(),
+});
+
 export const sessions = sqliteTable("sessions", {
   id: text("id").primaryKey(),
   data: text("data").notNull(),

@@ -1,15 +1,15 @@
 import { eq, count, desc, and, type SQL } from "drizzle-orm";
 import { db } from "../db/index.ts";
-import { tickets, users } from "../db/schema.ts";
+import { tickets, users, ticketReplies } from "../db/schema.ts";
 import type {
   StorageAdapter,
   Ticket,
   TicketType,
   PaginatedTickets,
   TicketFilters,
+  Reply,
 } from "../types.ts";
 
-// Explicit column selection shared by all ticket queries
 const ticketSelect = {
   id: tickets.id,
   userId: tickets.userId,
@@ -21,7 +21,6 @@ const ticketSelect = {
   username: users.username,
 };
 
-// Let TypeScript infer the row type directly from the select shape
 type TicketRow = {
   id: string;
   userId: string | null;
@@ -130,6 +129,61 @@ export class SQLiteAdapter implements StorageAdapter {
 
   async deleteTicket(id: string): Promise<void> {
     await db.delete(tickets).where(eq(tickets.id, id));
+  }
+
+  async getReplies(ticketId: string): Promise<Reply[]> {
+    const rows = await db
+      .select({
+        id: ticketReplies.id,
+        ticketId: ticketReplies.ticketId,
+        userId: ticketReplies.userId,
+        body: ticketReplies.body,
+        authorRole: ticketReplies.authorRole,
+        createdAt: ticketReplies.createdAt,
+        username: users.username,
+      })
+      .from(ticketReplies)
+      .leftJoin(users, eq(ticketReplies.userId, users.id))
+      .where(eq(ticketReplies.ticketId, ticketId))
+      .orderBy(ticketReplies.createdAt);
+    return rows.map(r => ({
+      ...r,
+      authorRole: r.authorRole as Reply['authorRole'],
+      username: r.username ?? null,
+    }));
+  }
+
+  async createReply(data: {
+    ticketId: string;
+    body: string;
+    userId?: string;
+    authorRole: Reply['authorRole'];
+  }): Promise<Reply> {
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    await db.insert(ticketReplies).values({
+      id,
+      ticketId: data.ticketId,
+      userId: data.userId ?? null,
+      body: data.body,
+      authorRole: data.authorRole,
+      createdAt: now,
+    });
+    const rows = await db
+      .select({
+        id: ticketReplies.id,
+        ticketId: ticketReplies.ticketId,
+        userId: ticketReplies.userId,
+        body: ticketReplies.body,
+        authorRole: ticketReplies.authorRole,
+        createdAt: ticketReplies.createdAt,
+        username: users.username,
+      })
+      .from(ticketReplies)
+      .leftJoin(users, eq(ticketReplies.userId, users.id))
+      .where(eq(ticketReplies.id, id));
+    const row = rows[0]!;
+    return { ...row, authorRole: row.authorRole as Reply['authorRole'], username: row.username ?? null };
   }
 }
 

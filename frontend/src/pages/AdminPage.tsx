@@ -311,6 +311,9 @@ export function AdminPage({ isAuthenticated, user }: AdminPageProps) {
             )}
             <TicketDetail
               ticket={selectedTicket}
+              isAuthenticated={isAuthenticated}
+              canReply={canModify(selectedTicket)}
+              replyAs="support"
               onCloseTicket={canModify(selectedTicket) ? handleCloseTicket : undefined}
               onReopenTicket={canModify(selectedTicket) ? handleReopenTicket : undefined}
               onDeleteTicket={canModify(selectedTicket) ? handleDeleteTicket : undefined}

@@ -1,13 +1,8 @@
 import { Profanity } from "@2toad/profanity";
 
-// ─── Profanity checker ────────────────────────────────────────────────────────
 
 // Whole-word mode avoids false positives like "assassin", "classic", "scunthorpe"
 const profanity = new Profanity({ wholeWord: true });
-
-// ─── PII redaction patterns ───────────────────────────────────────────────────
-// Inlined from source inspection of @redactpii/node — pure regex, no dependency needed.
-// Each entry defines what to match and what label to replace it with.
 
 const PII_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
   {
@@ -66,6 +61,20 @@ export interface ContentFilterRejection {
 }
 
 export type ContentFilterOutcome = ContentFilterResult | ContentFilterRejection;
+
+/**
+ * Filters a single body of text (e.g. a reply). Rejects profanity and redacts PII.
+ */
+export function filterBody(body: string): ContentFilterOutcome {
+  if (profanity.exists(body)) {
+    return {
+      ok: false,
+      reason: "profanity",
+      message: "Your reply contains language that is not allowed. Please revise it before submitting.",
+    };
+  }
+  return { ok: true, subject: "", description: redactPII(body) };
+}
 
 /**
  * Runs subject and description through the content filter.

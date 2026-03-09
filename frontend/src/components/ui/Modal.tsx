@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { CloseIcon } from '../icons/close'
 
 interface ModalProps {
   isOpen: boolean
@@ -31,7 +32,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
       aria-labelledby="modal-title"
     >
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md rounded-lg border border-border-100 bg-bg-200 shadow-2xl">
+      <div className="relative z-10 w-full max-w-2xl rounded-lg border border-border-100 bg-bg-200 shadow-2xl">
         <div className="flex items-center justify-between border-b border-border-100 px-5 py-4">
           <h2 id="modal-title" className="text-sm font-semibold text-fg-100">{title}</h2>
           <button
@@ -39,12 +40,10 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             className="rounded-md p-1 text-fg-300 transition-colors hover:bg-bg-300 hover:text-fg-100 cursor-pointer"
             aria-label="Close"
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
+            <CloseIcon className="size-5" />
           </button>
         </div>
-        <div className="px-5 py-4 max-h-[70vh] overflow-y-auto">{children}</div>
+        <div className="px-5 py-4">{children}</div>
       </div>
     </div>,
     document.body

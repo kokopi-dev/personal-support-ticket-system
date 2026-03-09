@@ -17,6 +17,16 @@ export interface Ticket {
   createdAt: string
 }
 
+export interface Reply {
+  id: string
+  ticketId: string
+  userId: string | null
+  username: string | null
+  body: string
+  authorRole: 'user' | 'support'
+  createdAt: string
+}
+
 export interface IconProps {
   className?: string;
 }
