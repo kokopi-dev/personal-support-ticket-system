@@ -18,12 +18,9 @@ services:
   frontend:
     build:
       context: ./frontend
-      env_file:
-        - ./frontend/.env
       args:
         # Baked into the Vite bundle at build time.
-        # Read from frontend/.env — must be the URL the browser uses to reach
-        # the backend, not an internal Docker hostname.
+        # Compose reads this from the root .env file.
         VITE_API_URL: ${VITE_API_URL}
     env_file:
       - ./frontend/.env
