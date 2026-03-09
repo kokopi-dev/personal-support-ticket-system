@@ -66,6 +66,22 @@ export const localAdapter = {
   },
 }
 
+// ─── Paginated response envelope ─────────────────────────────────────────────
+
+export interface PaginatedResponse<T> {
+  data: T[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
+export interface TicketFilters {
+  status?: Ticket['status']
+  type?: TicketType
+  mine?: boolean  // restrict to the current user's tickets
+}
+
 // ─── Storage API ──────────────────────────────────────────────────────────────
 
 export const storage = {
@@ -78,13 +94,44 @@ export const storage = {
     }
   },
 
-  // Admin view — all DB tickets when authenticated, localStorage when guest
-  async getAllTickets(isAuthenticated: boolean): Promise<Ticket[]> {
-    if (!isAuthenticated) return localAdapter.getTickets()
+  // Admin view — paginated from API when authenticated, sliced localStorage when guest
+  async getAllTickets(
+    isAuthenticated: boolean,
+    page = 1,
+    pageSize = 20,
+    filters: TicketFilters = {},
+  ): Promise<PaginatedResponse<Ticket>> {
+    if (!isAuthenticated) {
+      let all = localAdapter.getTickets()
+      if (filters.status) all = all.filter(t => t.status === filters.status)
+      if (filters.type)   all = all.filter(t => t.type === filters.type)
+      const start = (page - 1) * pageSize
+      return {
+        data: all.slice(start, start + pageSize),
+        total: all.length,
+        page,
+        pageSize,
+        totalPages: Math.max(1, Math.ceil(all.length / pageSize)),
+      }
+    }
+
+    const params = new URLSearchParams({ page: String(page) })
+    if (filters.status) params.set('status', filters.status)
+    if (filters.type)   params.set('type', filters.type)
+    if (filters.mine)   params.set('mine', 'true')
+
     try {
-      return await apiFetch<Ticket[]>('/api/tickets/all')
+      return await apiFetch<PaginatedResponse<Ticket>>(`/api/tickets/all?${params}`)
     } catch {
-      return localAdapter.getTickets()
+      const all = localAdapter.getTickets()
+      const start = (page - 1) * pageSize
+      return {
+        data: all.slice(start, start + pageSize),
+        total: all.length,
+        page,
+        pageSize,
+        totalPages: Math.max(1, Math.ceil(all.length / pageSize)),
+      }
     }
   },
 

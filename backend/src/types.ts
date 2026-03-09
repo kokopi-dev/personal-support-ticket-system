@@ -17,6 +17,7 @@ export type TicketType =
 export interface Ticket {
   id: string
   userId: string | null
+  username: string | null
   subject: string
   description: string
   type: TicketType
@@ -26,8 +27,21 @@ export interface Ticket {
 
 export const TICKET_LIMIT = 3
 
+export interface TicketFilters {
+  status?: Ticket['status']
+  type?: TicketType
+  userId?: string
+}
+
+export interface PaginatedTickets {
+  data: Ticket[]
+  total: number
+}
+
 export interface StorageAdapter {
   getTickets(): Promise<Ticket[]>
+  getTicketsByUser(userId: string): Promise<Ticket[]>
+  getTicketsPaginated(limit: number, offset: number, filters?: TicketFilters): Promise<PaginatedTickets>
   getTicket(id: string): Promise<Ticket | null>
   countTicketsByUser(userId: string): Promise<number>
   createTicket(data: Pick<Ticket, 'subject' | 'description' | 'type'> & { userId?: string }): Promise<Ticket>

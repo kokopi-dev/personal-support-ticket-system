@@ -21,11 +21,15 @@ const TYPE_LABELS: Record<Ticket['type'], string> = {
 
 const HOLD_DURATION = 2000 // ms
 
-interface HoldToCloseProps {
+interface HoldButtonProps {
   onComplete: () => Promise<void>
+  label: string
+  completingLabel: string
+  icon: React.ReactNode
+  ariaLabel: string
 }
 
-function HoldToClose({ onComplete }: HoldToCloseProps) {
+function HoldButton({ onComplete, label, completingLabel, icon, ariaLabel }: HoldButtonProps) {
   const [progress, setProgress] = useState(0) // 0–1
   const [completing, setCompleting] = useState(false)
   const rafRef = useRef<number | null>(null)
@@ -87,7 +91,7 @@ function HoldToClose({ onComplete }: HoldToCloseProps) {
           : 'text-fg-300 hover:text-fg-100 hover:bg-bg-300'
         }
       `}
-      aria-label="Hold to close ticket"
+      aria-label={ariaLabel}
     >
       {/* Progress ring */}
       <span className="relative flex items-center justify-center shrink-0" style={{ width: size, height: size }}>
@@ -112,27 +116,50 @@ function HoldToClose({ onComplete }: HoldToCloseProps) {
           />
         </svg>
         {/* Icon */}
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-          <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        </svg>
+        {icon}
       </span>
 
       <span className="text-xs font-medium">
-        {completing ? 'Closing…' : isHolding ? 'Keep holding…' : 'Hold to close'}
+        {completing ? completingLabel : isHolding ? 'Keep holding…' : label}
       </span>
     </button>
   )
 }
 
+// Close icon (×)
+const CloseIcon = (
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+    <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+)
+
+// Delete icon (trash)
+const DeleteIcon = (
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+    <path d="M1.5 3h9M4.5 3V2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1M5 5.5v3M7 5.5v3M2.5 3l.5 7a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5l.5-7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+
+// Reopen icon (arrow rotating back)
+const ReopenIcon = (
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+    <path d="M1.5 6a4.5 4.5 0 1 0 .9-2.7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+    <path d="M1.5 2v2.5H4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+
 interface TicketDetailProps {
   ticket: Ticket
-  onCloseTicket: (id: string) => Promise<void>
+  onCloseTicket?: (id: string) => Promise<void>
+  onDeleteTicket?: (id: string) => Promise<void>
+  onReopenTicket?: (id: string) => Promise<void>
 }
 
-export function TicketDetail({ ticket, onCloseTicket }: TicketDetailProps) {
+export function TicketDetail({ ticket, onCloseTicket, onDeleteTicket, onReopenTicket }: TicketDetailProps) {
   const { txnId, body } = parseDescription(ticket.description)
   const txn = txnId ? FAKE_TRANSACTIONS.find(t => t.id === txnId) ?? null : null
   const isClosed = ticket.status === 'closed'
+  const hasAnyAction = onCloseTicket || onReopenTicket || onDeleteTicket
 
   return (
     <div className="flex flex-col gap-4">
@@ -170,14 +197,46 @@ export function TicketDetail({ ticket, onCloseTicket }: TicketDetailProps) {
         )}
       </div>
 
-      {/* Footer: ticket ID + close action */}
+      {/* Footer: ticket ID + actions */}
       <div className="flex items-center justify-between border-t border-border-100 pt-3">
         <p className="text-xs text-fg-300 font-mono">ID: {ticket.id}</p>
-        {isClosed ? (
-          <span className="text-xs text-fg-300 italic">This ticket is closed.</span>
-        ) : (
-          <HoldToClose onComplete={() => onCloseTicket(ticket.id)} />
-        )}
+        <div className="flex items-center gap-1">
+          {!hasAnyAction && (
+            <span className="text-xs text-fg-300 italic">Read only</span>
+          )}
+          {isClosed ? (
+            onReopenTicket ? (
+              <HoldButton
+                onComplete={() => onReopenTicket(ticket.id)}
+                label="Hold to reopen"
+                completingLabel="Reopening…"
+                icon={ReopenIcon}
+                ariaLabel="Hold to reopen ticket"
+              />
+            ) : onCloseTicket ? (
+              <span className="text-xs text-fg-300 italic">This ticket is closed.</span>
+            ) : null
+          ) : (
+            onCloseTicket && (
+              <HoldButton
+                onComplete={() => onCloseTicket(ticket.id)}
+                label="Hold to close"
+                completingLabel="Closing…"
+                icon={CloseIcon}
+                ariaLabel="Hold to close ticket"
+              />
+            )
+          )}
+          {onDeleteTicket && (
+            <HoldButton
+              onComplete={() => onDeleteTicket(ticket.id)}
+              label="Hold to delete"
+              completingLabel="Deleting…"
+              icon={DeleteIcon}
+              ariaLabel="Hold to delete ticket"
+            />
+          )}
+        </div>
       </div>
 
     </div>

@@ -9,6 +9,7 @@ export type TicketType =
 export interface Ticket {
   id: string
   userId: string | null
+  username: string | null
   subject: string
   description: string
   type: TicketType

@@ -1,62 +1,147 @@
-import { eq, count } from 'drizzle-orm'
-import { db } from '../db/index.ts'
-import { tickets } from '../db/schema.ts'
-import type { StorageAdapter, Ticket, TicketType } from '../types.ts'
+import { eq, count, desc, and, type SQL } from "drizzle-orm";
+import { db } from "../db/index.ts";
+import { tickets, users } from "../db/schema.ts";
+import type {
+  StorageAdapter,
+  Ticket,
+  TicketType,
+  PaginatedTickets,
+  TicketFilters,
+} from "../types.ts";
+
+// Explicit column selection shared by all ticket queries
+const ticketSelect = {
+  id: tickets.id,
+  userId: tickets.userId,
+  subject: tickets.subject,
+  description: tickets.description,
+  type: tickets.type,
+  status: tickets.status,
+  createdAt: tickets.createdAt,
+  username: users.username,
+};
+
+// Let TypeScript infer the row type directly from the select shape
+type TicketRow = {
+  id: string;
+  userId: string | null;
+  subject: string;
+  description: string;
+  type: string;
+  status: string;
+  createdAt: string;
+  username: string | null;
+};
 
 export class SQLiteAdapter implements StorageAdapter {
   async getTickets(): Promise<Ticket[]> {
-    const rows = await db.select().from(tickets).orderBy(tickets.createdAt)
-    return rows.map(toTicket).reverse()
+    const rows = await db
+      .select(ticketSelect)
+      .from(tickets)
+      .leftJoin(users, eq(tickets.userId, users.id))
+      .orderBy(desc(tickets.createdAt));
+    return rows.map(toTicket);
+  }
+
+  async getTicketsByUser(userId: string): Promise<Ticket[]> {
+    const rows = await db
+      .select(ticketSelect)
+      .from(tickets)
+      .leftJoin(users, eq(tickets.userId, users.id))
+      .where(eq(tickets.userId, userId))
+      .orderBy(desc(tickets.createdAt));
+    return rows.map(toTicket);
+  }
+
+  async getTicketsPaginated(
+    limit: number,
+    offset: number,
+    filters: TicketFilters = {},
+  ): Promise<PaginatedTickets> {
+    const conditions: SQL[] = [];
+    if (filters.status) conditions.push(eq(tickets.status, filters.status));
+    if (filters.type) conditions.push(eq(tickets.type, filters.type));
+    if (filters.userId) conditions.push(eq(tickets.userId, filters.userId));
+
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [rows, totalResult] = await Promise.all([
+      db
+        .select(ticketSelect)
+        .from(tickets)
+        .leftJoin(users, eq(tickets.userId, users.id))
+        .where(where)
+        .orderBy(desc(tickets.createdAt))
+        .limit(limit)
+        .offset(offset),
+      db.select({ count: count() }).from(tickets).where(where),
+    ]);
+    return {
+      data: rows.map(toTicket),
+      total: totalResult[0]?.count ?? 0,
+    };
   }
 
   async getTicket(id: string): Promise<Ticket | null> {
-    const rows = await db.select().from(tickets).where(eq(tickets.id, id))
-    return rows[0] ? toTicket(rows[0]) : null
+    const rows = await db
+      .select(ticketSelect)
+      .from(tickets)
+      .leftJoin(users, eq(tickets.userId, users.id))
+      .where(eq(tickets.id, id));
+    return rows[0] ? toTicket(rows[0]) : null;
   }
 
   async countTicketsByUser(userId: string): Promise<number> {
     const result = await db
       .select({ count: count() })
       .from(tickets)
-      .where(eq(tickets.userId, userId))
-    return result[0]?.count ?? 0
+      .where(eq(tickets.userId, userId));
+    return result[0]?.count ?? 0;
   }
 
   async createTicket(
-    data: Pick<Ticket, 'subject' | 'description' | 'type'> & { userId?: string }
+    data: Pick<Ticket, "subject" | "description" | "type"> & {
+      userId?: string;
+    },
   ): Promise<Ticket> {
-    const id = crypto.randomUUID()
-    const now = new Date().toISOString()
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
     await db.insert(tickets).values({
       id,
       userId: data.userId ?? null,
       subject: data.subject,
       description: data.description,
       type: data.type,
-      status: 'open',
+      status: "open",
       createdAt: now,
-    })
-    return (await this.getTicket(id))!
+    });
+    return (await this.getTicket(id))!;
   }
 
-  async updateTicket(id: string, patch: Partial<Ticket>): Promise<Ticket | null> {
-    await db.update(tickets).set(patch).where(eq(tickets.id, id))
-    return this.getTicket(id)
+  async updateTicket(
+    id: string,
+    patch: Partial<Ticket>,
+  ): Promise<Ticket | null> {
+    // Strip username — it's a derived field from the join, not a column
+    const { username: _, ...columnPatch } = patch as Ticket;
+    await db.update(tickets).set(columnPatch).where(eq(tickets.id, id));
+    return this.getTicket(id);
   }
 
   async deleteTicket(id: string): Promise<void> {
-    await db.delete(tickets).where(eq(tickets.id, id))
+    await db.delete(tickets).where(eq(tickets.id, id));
   }
 }
 
-function toTicket(row: typeof tickets.$inferSelect): Ticket {
+function toTicket(row: TicketRow): Ticket {
   return {
     id: row.id,
     userId: row.userId,
+    username: row.username ?? null,
     subject: row.subject,
     description: row.description,
     type: row.type as TicketType,
-    status: row.status as Ticket['status'],
+    status: row.status as Ticket["status"],
     createdAt: row.createdAt,
-  }
+  };
 }

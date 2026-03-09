@@ -2,6 +2,8 @@ import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import type { Ticket, TicketType } from "../types.ts";
 import { TICKET_LIMIT } from "../types.ts";
 
+const PAGE_SIZE = 20;
+
 async function requireAuth(req: FastifyRequest, reply: FastifyReply) {
   if (!req.isAuthenticated) {
     return reply.status(401).send({ error: "Unauthorized" });
@@ -9,14 +11,42 @@ async function requireAuth(req: FastifyRequest, reply: FastifyReply) {
 }
 
 export const ticketsRouter: FastifyPluginAsync = async (app) => {
-  // GET /api/tickets/all — admin view, returns all tickets in the system
-  app.get("/all", { preHandler: requireAuth }, async (req) => {
-    return req.storage.getTickets();
+  // GET /api/tickets/all — admin view, paginated with optional filters
+  app.get<{
+    Querystring: {
+      page?: string;
+      status?: Ticket["status"];
+      type?: TicketType;
+      mine?: string; // "true" to restrict to the requesting user's tickets
+    };
+  }>("/all", { preHandler: requireAuth }, async (req) => {
+    const page = Math.max(1, parseInt(req.query.page ?? "1", 10) || 1);
+    const offset = (page - 1) * PAGE_SIZE;
+
+    const filters = {
+      status: req.query.status,
+      type: req.query.type,
+      // If mine=true, scope to the current user's tickets
+      userId: req.query.mine === "true" ? req.user!.id : undefined,
+    };
+
+    const result = await req.storage.getTicketsPaginated(
+      PAGE_SIZE,
+      offset,
+      filters,
+    );
+    return {
+      data: result.data,
+      total: result.total,
+      page,
+      pageSize: PAGE_SIZE,
+      totalPages: Math.max(1, Math.ceil(result.total / PAGE_SIZE)),
+    };
   });
 
-  // GET /api/tickets
+  // GET /api/tickets — returns only the current user's tickets
   app.get("/", { preHandler: requireAuth }, async (req) => {
-    return req.storage.getTickets();
+    return req.storage.getTicketsByUser(req.user!.id);
   });
 
   // GET /api/tickets/:id
@@ -61,21 +91,31 @@ export const ticketsRouter: FastifyPluginAsync = async (app) => {
     return reply.status(201).send(ticket);
   });
 
-  // PATCH /api/tickets/:id
+  // PATCH /api/tickets/:id — user may only update their own tickets
   app.patch<{
     Params: { id: string };
     Body: Partial<Ticket>;
   }>("/:id", { preHandler: requireAuth }, async (req, reply) => {
+    const existing = await req.storage.getTicket(req.params.id);
+    if (!existing) return reply.status(404).send({ error: "Not found" });
+    if (existing.userId !== req.user!.id) {
+      return reply.status(403).send({ error: "Forbidden" });
+    }
     const ticket = await req.storage.updateTicket(req.params.id, req.body);
     if (!ticket) return reply.status(404).send({ error: "Not found" });
     return ticket;
   });
 
-  // DELETE /api/tickets/:id
+  // DELETE /api/tickets/:id — user may only delete their own tickets
   app.delete<{ Params: { id: string } }>(
     "/:id",
     { preHandler: requireAuth },
     async (req, reply) => {
+      const existing = await req.storage.getTicket(req.params.id);
+      if (!existing) return reply.status(404).send({ error: "Not found" });
+      if (existing.userId !== req.user!.id) {
+        return reply.status(403).send({ error: "Forbidden" });
+      }
       await req.storage.deleteTicket(req.params.id);
       return reply.status(204).send();
     },
