@@ -8,10 +8,7 @@ COPY tsconfig*.json ./
 COPY vite.config.ts ./
 COPY src/ ./src/
 COPY public/ ./public/
-
-# VITE_API_URL must be set at build time — Vite bakes it into the bundle
-ARG VITE_API_URL
-ENV VITE_API_URL=$VITE_API_URL
+COPY .env ./
 
 RUN bun install --frozen-lockfile
 RUN bun run build

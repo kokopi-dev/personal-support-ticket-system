@@ -6,6 +6,7 @@ COPY package.json ./
 COPY drizzle.config.ts ./
 COPY drizzle/ ./drizzle/
 COPY src/ ./src/
+COPY .env ./
 
 RUN bun install --frozen-lockfile
 

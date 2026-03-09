@@ -63,7 +63,7 @@ function SupportApp() {
 
 export default function App() {
   return (
-    <BrowserRouter basename="/projects/support-ticket-demo">
+    <BrowserRouter>
       <Routes>
         <Route path="/" element={<SupportApp />} />
         <Route path="*" element={<NotFound />} />
