@@ -13,7 +13,7 @@ sudo mkdir -p /var/www/support-ticket-demo
 sudo cp -r frontend/dist/. /var/www/support-ticket-demo/
 
 echo "Building and restarting backend..."
-docker compose up -d --build backend
+docker compose up -d --build --remove-orphans backend
 
 echo "Cleaning up old images..."
 docker image prune -f

@@ -37,7 +37,7 @@ await app.register(session, {
   cookie: {
     httpOnly: true,
     secure: isProd, // HTTPS-only in production
-    sameSite: isProd ? "strict" : "lax", // strict in prod, lax in dev
+    sameSite: "lax",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
   },
   saveUninitialized: false,
