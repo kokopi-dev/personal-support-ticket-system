@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <style>
+    rect.bg { fill: #09090b; }
+    text { fill: #fafafa; }
+    rect.border { fill: none; stroke: #3f3f46; stroke-width="1"; }
+    @media (prefers-color-scheme: light) {
+      rect.bg { fill: #fafafa; }
+      text { fill: #09090b; }
+      rect.border { stroke: #e4e4e7; }
+    }
+  </style>
+  <rect class="bg" width="32" height="32" rx="7"/>
+  <rect class="border" x="0.5" y="0.5" width="31" height="31" rx="6.5"/>
+  <text
+    x="16"
+    y="22"
+    font-family="Georgia, serif"
+    font-size="15"
+    font-weight="700"
+    text-anchor="middle"
+    letter-spacing="0.5"
+  >dg</text>
+</svg>
