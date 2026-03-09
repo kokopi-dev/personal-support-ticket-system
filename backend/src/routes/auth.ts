@@ -1,4 +1,3 @@
-import fp from "fastify-plugin";
 import type { FastifyPluginAsync } from "fastify";
 import { OAuth2Client } from "google-auth-library";
 import {

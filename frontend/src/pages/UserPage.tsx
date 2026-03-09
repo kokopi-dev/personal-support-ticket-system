@@ -8,22 +8,92 @@ import { storage } from '../lib/storage.ts'
 import type { Ticket } from '../lib/types.ts'
 import { PlusIcon } from '../components/icons/plus.tsx'
 
+const TICKET_LIMIT = 3
+
 interface UserPageProps {
   isAuthenticated: boolean
 }
 
+function TicketLimitReached({ onClose, fromServer }: { onClose: () => void; fromServer?: boolean }) {
+  return (
+    <div className="flex flex-col items-center gap-4 py-4 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border-100 bg-bg-300 text-2xl">
+        🗂️
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <p className="text-sm font-semibold text-fg-100">Ticket limit reached</p>
+        <p className="text-xs leading-relaxed text-fg-300 max-w-xs">
+          {fromServer ? (
+            <>
+              The server rejected your request — you already have{' '}
+              <span className="text-fg-200 font-medium">{TICKET_LIMIT} active support tickets</span>.
+              Your ticket was not created.
+            </>
+          ) : (
+            <>
+              You can have a maximum of{' '}
+              <span className="text-fg-200 font-medium">{TICKET_LIMIT} active support tickets</span>{' '}
+              at a time.
+            </>
+          )}
+        </p>
+      </div>
+      <div className="w-full rounded-lg border border-border-100 bg-bg-300 px-4 py-3 text-left">
+        <p className="text-xs font-medium text-fg-200 mb-2">How to free up a slot</p>
+        <ol className="flex flex-col gap-1.5">
+          {[
+            'Switch to the Admin tab',
+            'Find a resolved or closed ticket',
+            'Delete it to make room',
+          ].map((step, i) => (
+            <li key={i} className="flex items-center gap-2.5 text-xs text-fg-300">
+              <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-bg-400 text-[10px] font-medium text-fg-200">
+                {i + 1}
+              </span>
+              {step}
+            </li>
+          ))}
+        </ol>
+      </div>
+      <Button variant="ghost" onClick={onClose} className="mt-1">
+        Got it
+      </Button>
+    </div>
+  )
+}
+
 export function UserPage({ isAuthenticated }: UserPageProps) {
   const [tickets, setTickets] = useState<Ticket[]>([])
+  const [serverLimitHit, setServerLimitHit] = useState(false)
   const newTicketModal = useModal()
+
+  const atLimit = isAuthenticated && tickets.length >= TICKET_LIMIT
+  const showLimitScreen = atLimit || serverLimitHit
 
   useEffect(() => {
     storage.getTickets().then(setTickets)
   }, [isAuthenticated])
 
-  const handleCreate = async (form: Pick<Ticket, 'subject' | 'description' | 'type'>) => {
-    const ticket = await storage.createTicket(form)
-    setTickets(prev => [ticket, ...prev])
+  // Reset server limit flag whenever the modal closes
+  const handleClose = () => {
     newTicketModal.close()
+    setServerLimitHit(false)
+  }
+
+  const handleCreate = async (form: Pick<Ticket, 'subject' | 'description' | 'type'>) => {
+    if (atLimit) return
+    try {
+      const ticket = await storage.createTicket(form)
+      setTickets(prev => [ticket, ...prev])
+      newTicketModal.close()
+    } catch (err: any) {
+      if (err?.code === 'ticket_limit_reached') {
+        // Backend rejected — switch the open modal to the limit screen immediately
+        // and re-sync the ticket list so atLimit also becomes true
+        setServerLimitHit(true)
+        storage.getTickets().then(setTickets)
+      }
+    }
   }
 
   const handleDelete = async (id: string) => {
@@ -37,7 +107,17 @@ export function UserPage({ isAuthenticated }: UserPageProps) {
         <div>
           <h1 className="text-lg font-semibold text-fg-100">My Tickets</h1>
           <p className="mt-0.5 text-sm text-fg-300">
-            {tickets.length} {tickets.length === 1 ? 'ticket' : 'tickets'}
+            {isAuthenticated ? (
+              <>
+                {tickets.length}{' '}
+                <span className={atLimit ? 'text-amber-400' : 'text-fg-300'}>
+                  / {TICKET_LIMIT}
+                </span>{' '}
+                tickets
+              </>
+            ) : (
+              <>{tickets.length} {tickets.length === 1 ? 'ticket' : 'tickets'}</>
+            )}
           </p>
         </div>
         <Button onClick={newTicketModal.open}>
@@ -48,8 +128,15 @@ export function UserPage({ isAuthenticated }: UserPageProps) {
 
       <TicketTable tickets={tickets} onDelete={handleDelete} />
 
-      <Modal isOpen={newTicketModal.isOpen} onClose={newTicketModal.close} title="New Ticket">
-        <NewTicketForm onSubmit={handleCreate} />
+      <Modal
+        isOpen={newTicketModal.isOpen}
+        onClose={handleClose}
+        title={showLimitScreen ? 'Ticket Limit Reached' : 'New Ticket'}
+      >
+        {showLimitScreen
+          ? <TicketLimitReached onClose={handleClose} fromServer={serverLimitHit && !atLimit} />
+          : <NewTicketForm onSubmit={handleCreate} />
+        }
       </Modal>
     </>
   )

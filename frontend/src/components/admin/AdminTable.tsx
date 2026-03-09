@@ -7,6 +7,14 @@ function formatDate(iso: string): string {
   })
 }
 
+// Parse transaction reference encoded by NewTicketForm into the description
+// Format: "[Transaction: TXN-XXXXX — Label $X.XX on Date]\n\n..."
+function parseTransaction(description: string): { txnLine: string; body: string } | null {
+  const match = description.match(/^\[Transaction: ([^\]]+)\]\n?\n?(.*)$/s)
+  if (!match) return null
+  return { txnLine: match[1].trim(), body: match[2].trim() }
+}
+
 interface AdminTableProps {
   tickets: Ticket[]
 }
@@ -20,12 +28,14 @@ export function AdminTable({ tickets }: AdminTableProps) {
     )
   }
 
+  const hasBilling = tickets.some(t => t.type === 'billing')
+
   return (
     <div className="overflow-hidden rounded-lg border border-border-100">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border-100 bg-bg-200">
-            {(['Subject', 'Type', 'Status', 'Description', 'Created'] as const).map(col => (
+            {(['Subject', 'Type', 'Status', ...(hasBilling ? ['Transaction'] : []), 'Description', 'Created'] as const).map(col => (
               <th
                 key={col}
                 className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-fg-300"
@@ -36,27 +46,43 @@ export function AdminTable({ tickets }: AdminTableProps) {
           </tr>
         </thead>
         <tbody className="divide-y divide-border-100 bg-bg-100">
-          {tickets.map(ticket => (
-            <tr key={ticket.id} className="transition-colors hover:bg-bg-200">
-              <td className="px-4 py-3 font-medium text-fg-100">
-                {ticket.subject}
-              </td>
-              <td className="px-4 py-3 text-xs capitalize text-fg-200">
-                {ticket.type.replace('-', ' ')}
-              </td>
-              <td className="px-4 py-3">
-                <Badge status={ticket.status} />
-              </td>
-              <td className="max-w-xs px-4 py-3 text-xs text-fg-300">
-                <span className="line-clamp-2">
-                  {ticket.description || <span className="italic">No description</span>}
-                </span>
-              </td>
-              <td className="whitespace-nowrap px-4 py-3 text-xs text-fg-300">
-                {formatDate(ticket.createdAt)}
-              </td>
-            </tr>
-          ))}
+          {tickets.map(ticket => {
+            const txn = ticket.type === 'billing' ? parseTransaction(ticket.description) : null
+            const displayDescription = txn ? txn.body : ticket.description
+
+            return (
+              <tr key={ticket.id} className="transition-colors hover:bg-bg-200">
+                <td className="px-4 py-3 font-medium text-fg-100">
+                  {ticket.subject}
+                </td>
+                <td className="px-4 py-3 text-xs capitalize text-fg-200">
+                  {ticket.type.replace('-', ' ')}
+                </td>
+                <td className="px-4 py-3">
+                  <Badge status={ticket.status} />
+                </td>
+                {hasBilling && (
+                  <td className="px-4 py-3 text-xs text-fg-200 whitespace-nowrap">
+                    {txn ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-md border border-border-100 bg-bg-300 px-2 py-1 font-mono text-fg-200">
+                        {txn.txnLine.split(' — ')[0]}
+                      </span>
+                    ) : (
+                      <span className="text-fg-300 italic">—</span>
+                    )}
+                  </td>
+                )}
+                <td className="max-w-xs px-4 py-3 text-xs text-fg-300">
+                  <span className="line-clamp-2">
+                    {displayDescription || <span className="italic">No description</span>}
+                  </span>
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 text-xs text-fg-300">
+                  {formatDate(ticket.createdAt)}
+                </td>
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>

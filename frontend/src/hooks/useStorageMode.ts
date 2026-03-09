@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import type { StorageMode } from '../lib/storage.ts'
 
+export type StorageMode = 'local' | 'api'
 export type StorageResolution = StorageMode | 'pending'
 
 export function useStorageMode(): StorageResolution {

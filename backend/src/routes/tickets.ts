@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import type { Ticket, TicketType } from "../types.ts";
+import { TICKET_LIMIT } from "../types.ts";
 
 async function requireAuth(req: FastifyRequest, reply: FastifyReply) {
   if (!req.isAuthenticated) {
@@ -8,6 +9,11 @@ async function requireAuth(req: FastifyRequest, reply: FastifyReply) {
 }
 
 export const ticketsRouter: FastifyPluginAsync = async (app) => {
+  // GET /api/tickets/all — admin view, returns all tickets in the system
+  app.get("/all", { preHandler: requireAuth }, async (req) => {
+    return req.storage.getTickets();
+  });
+
   // GET /api/tickets
   app.get("/", { preHandler: requireAuth }, async (req) => {
     return req.storage.getTickets();
@@ -32,6 +38,20 @@ export const ticketsRouter: FastifyPluginAsync = async (app) => {
     if (!subject?.trim()) {
       return reply.status(400).send({ error: "subject is required" });
     }
+
+    // Enforce per-user ticket limit
+    if (req.user?.id) {
+      const userTicketCount = await req.storage.countTicketsByUser(req.user.id);
+      if (userTicketCount >= TICKET_LIMIT) {
+        return reply.status(429).send({
+          error: "ticket_limit_reached",
+          message: `You have reached the maximum of ${TICKET_LIMIT} support tickets. Please delete some from the admin view before creating new ones.`,
+          limit: TICKET_LIMIT,
+          current: userTicketCount,
+        });
+      }
+    }
+
     const ticket = await req.storage.createTicket({
       subject: subject.trim(),
       description,

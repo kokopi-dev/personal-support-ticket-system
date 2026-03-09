@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, count } from 'drizzle-orm'
 import { db } from '../db/index.ts'
 import { tickets } from '../db/schema.ts'
 import type { StorageAdapter, Ticket, TicketType } from '../types.ts'
@@ -12,6 +12,14 @@ export class SQLiteAdapter implements StorageAdapter {
   async getTicket(id: string): Promise<Ticket | null> {
     const rows = await db.select().from(tickets).where(eq(tickets.id, id))
     return rows[0] ? toTicket(rows[0]) : null
+  }
+
+  async countTicketsByUser(userId: string): Promise<number> {
+    const result = await db
+      .select({ count: count() })
+      .from(tickets)
+      .where(eq(tickets.userId, userId))
+    return result[0]?.count ?? 0
   }
 
   async createTicket(

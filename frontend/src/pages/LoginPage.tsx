@@ -70,7 +70,7 @@ export function LoginPage({ onBack, error }: LoginPageProps) {
 
         <div className="border-t border-border-100 px-6 py-4">
           <p className="text-center text-xs text-fg-300">
-            We only request your public profile — no email address is stored.
+            We only request your public profile — <span className="text-fg-100">no email address is stored.</span>
           </p>
         </div>
       </div>
