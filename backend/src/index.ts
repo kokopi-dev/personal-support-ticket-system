@@ -17,8 +17,7 @@ const sessionSecret = process.env.SESSION_SECRET;
 if (!sessionSecret) throw new Error("SESSION_SECRET env var is required");
 
 const app = Fastify({
-  // In prod: warn-level only to reduce noise; in dev: full pretty logging
-  logger: isProd ? { level: "warn" } : true,
+  logger: isProd ? { level: "info" } : true,
   // Trust the nginx reverse proxy so secure cookies and req.ip work correctly
   trustProxy: isProd,
 });

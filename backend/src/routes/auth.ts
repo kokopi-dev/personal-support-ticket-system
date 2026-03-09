@@ -80,7 +80,8 @@ export const authRouter: FastifyPluginAsync = async (fastify) => {
 
       req.session.user = user;
       const base = process.env.FRONTEND_APP_URL ?? "http://localhost:5173";
-      reply.redirect(`${base}?login=1`);
+      const baseUrl = base.endsWith("/") ? base : `${base}/`;
+      reply.redirect(`${baseUrl}?login=1`);
     },
   );
 
