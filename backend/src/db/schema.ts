@@ -31,3 +31,9 @@ export const users = sqliteTable('users', {
   avatarUrl: text('avatarUrl'),                         // Google profile picture
   createdAt: text('createdAt').notNull(),
 })
+
+export const sessions = sqliteTable('sessions', {
+  id: text('id').primaryKey(),
+  data: text('data').notNull(),
+  expiresAt: int('expires_at').notNull(), // unix ms
+})

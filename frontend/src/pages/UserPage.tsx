@@ -4,37 +4,25 @@ import { Button } from '../components/ui/Button.tsx'
 import { TicketTable } from '../components/tickets/TicketTable.tsx'
 import { NewTicketForm } from '../components/tickets/NewTicketForm.tsx'
 import { useModal } from '../hooks/useModal.ts'
-import { getStorage } from '../lib/storage.ts'
+import { storage } from '../lib/storage.ts'
 import type { Ticket } from '../lib/types.ts'
 
-interface UserPageProps {
-  storageMode: 'local' | 'remote'
-}
-
-export function UserPage({ storageMode }: UserPageProps) {
-  const storage = getStorage(storageMode)
+export function UserPage() {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const newTicketModal = useModal()
 
   useEffect(() => {
-    const result = storage.getTickets()
-    if (result instanceof Promise) {
-      result.then(setTickets)
-    } else {
-      setTickets(result)
-    }
-  }, [storageMode])
+    storage.getTickets().then(setTickets)
+  }, [])
 
   const handleCreate = async (form: Pick<Ticket, 'subject' | 'description' | 'type'>) => {
-    const result = storage.createTicket(form)
-    const ticket = result instanceof Promise ? await result : result
+    const ticket = await storage.createTicket(form)
     setTickets(prev => [ticket, ...prev])
     newTicketModal.close()
   }
 
   const handleDelete = async (id: string) => {
-    const result = storage.deleteTicket(id)
-    if (result instanceof Promise) await result
+    await storage.deleteTicket(id)
     setTickets(prev => prev.filter(t => t.id !== id))
   }
 

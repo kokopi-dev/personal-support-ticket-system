@@ -12,6 +12,7 @@
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "latest",
+    "@fastify/csrf-protection": "^7.1.0",
     "@fastify/session": "^11.1.1",
     "drizzle-orm": "^0.45.1",
     "fastify": "latest",

@@ -1,133 +1,110 @@
+import fp from "fastify-plugin";
 import type { FastifyPluginAsync } from "fastify";
 import { OAuth2Client } from "google-auth-library";
-import { eq } from "drizzle-orm";
 import {
   uniqueNamesGenerator,
   adjectives,
-  colors,
   animals,
 } from "unique-names-generator";
-import { db } from "../db/index.ts";
-import { users } from "../db/schema.ts";
-import type { User } from "../types.ts";
+import { eq } from "drizzle-orm";
+import { db } from "../db/index.js";
+import { users } from "../db/schema.js";
 
-const CLIENT_ID = process.env.GOOGLE_CLIENT_ID ?? "";
-const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? "";
-const REDIRECT_URI =
-  process.env.GOOGLE_REDIRECT_URI ?? "http://localhost:4500/api/auth/callback";
-const FRONTEND_URL = process.env.FRONTEND_URL ?? "http://localhost:5173";
+const client = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI,
+);
 
-const oauthClient = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
+const isProd = process.env.NODE_ENV === "production";
 
-function generateUsername(): string {
-  return uniqueNamesGenerator({
-    dictionaries: [adjectives, animals],
-    separator: " ",
-    length: 3,
-  });
-}
-
-export const authRouter: FastifyPluginAsync = async (app) => {
-  // ── Step 1: Redirect to Google ──────────────────────────────
-  app.get("/google", async (_req, reply) => {
-    const url = oauthClient.generateAuthUrl({
-      access_type: "online",
-      // Only request openid + profile — no email scope
+export const authRouter: FastifyPluginAsync = async (fastify) => {
+  // GET /api/auth/google — redirect to Google consent screen
+  fastify.get("/google", async (_req, reply) => {
+    const url = client.generateAuthUrl({
+      access_type: "offline",
       scope: ["openid", "profile"],
-      prompt: "select_account",
     });
-    return reply.redirect(url);
+    reply.redirect(url);
   });
 
-  // ── Step 2: Google redirects back here ──────────────────────
-  app.get<{ Querystring: { code?: string; error?: string } }>(
+  // GET /api/auth/callback — exchange code, upsert user, set session
+  fastify.get<{ Querystring: { code?: string } }>(
     "/callback",
     async (req, reply) => {
-      const { code, error } = req.query;
+      const { code } = req.query;
+      if (!code) return reply.status(400).send({ error: "Missing code" });
 
-      if (error || !code) {
-        return reply.redirect(`${FRONTEND_URL}?error=oauth_denied`);
-      }
+      const { tokens } = await client.getToken(code);
+      client.setCredentials(tokens);
 
-      try {
-        const { tokens } = await oauthClient.getToken(code);
-        oauthClient.setCredentials(tokens);
+      const ticket = await client.verifyIdToken({
+        idToken: tokens.id_token!,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload()!;
 
-        const ticket = await oauthClient.verifyIdToken({
-          idToken: tokens.id_token!,
-          audience: CLIENT_ID,
+      // Look up existing user by Google ID
+      let user = db
+        .select()
+        .from(users)
+        .where(eq(users.googleId, payload.sub))
+        .get();
+
+      if (!user) {
+        let username = uniqueNamesGenerator({
+          dictionaries: [adjectives, animals],
+          separator: " ",
+          length: 2,
         });
-        const payload = ticket.getPayload();
-        if (!payload?.sub) {
-          return reply.redirect(`${FRONTEND_URL}?error=invalid_token`);
-        }
 
-        const googleId = payload.sub;
-        const avatarUrl = payload.picture ?? null;
-
-        // Find or create user
-        const existing = await db
-          .select()
+        // Collision retry — append a random suffix if username is taken
+        const existing = db
+          .select({ id: users.id })
           .from(users)
-          .where(eq(users.googleId, googleId))
-          .limit(1);
+          .where(eq(users.username, username))
+          .get();
+        if (existing) username += `-${Math.floor(Math.random() * 1000)}`;
 
-        let user: User;
+        const newUser = {
+          id: crypto.randomUUID(),
+          googleId: payload.sub,
+          username,
+          avatarUrl: payload.picture ?? null,
+          createdAt: new Date().toISOString(),
+        };
 
-        if (existing[0]) {
-          // Returning user — refresh avatar
-          await db
-            .update(users)
-            .set({ avatarUrl })
-            .where(eq(users.googleId, googleId));
-          user = {
-            id: existing[0].id,
-            googleId: existing[0].googleId,
-            username: existing[0].username,
-            avatarUrl: avatarUrl ?? existing[0].avatarUrl,
-            createdAt: existing[0].createdAt,
-          };
-        } else {
-          // New user — generate readable username
-          let username = generateUsername();
-          // Retry on collision (very rare)
-          const collision = await db
-            .select({ id: users.id })
-            .from(users)
-            .where(eq(users.username, username))
-            .limit(1);
-          if (collision[0]) {
-            username = `${generateUsername()}-${Math.floor(Math.random() * 999)}`;
-          }
+        db.insert(users).values(newUser).run();
 
-          const id = crypto.randomUUID();
-          const now = new Date().toISOString();
-          await db
-            .insert(users)
-            .values({ id, googleId, username, avatarUrl, createdAt: now });
-          user = { id, googleId, username, avatarUrl, createdAt: now };
-        }
-
-        req.session.user = user;
-        return reply.redirect(FRONTEND_URL);
-      } catch (err) {
-        app.log.error(err, "OAuth callback error");
-        return reply.redirect(`${FRONTEND_URL}?error=server_error`);
+        user = newUser;
       }
+
+      req.session.user = user;
+      reply.redirect(process.env.FRONTEND_URL ?? "http://localhost:5173");
     },
   );
 
-  // /api/auth/me
-  app.get("/me", async (req, reply) => {
-    if (!req.isAuthenticated || !req.user) {
-      return reply.status(401).send({ user: null });
-    }
-    return reply.send({ user: req.user });
+  // GET /api/auth/me — return current session user
+  fastify.get("/me", async (req, reply) => {
+    if (!req.isAuthenticated)
+      return reply.status(401).send({ error: "Unauthenticated" });
+    reply.send(req.user);
   });
 
-  // /api/auth/logout
-  app.post("/logout", async (req, reply) => {
+  // POST /api/auth/logout
+  fastify.post("/logout", async (req, reply) => {
     await req.session.destroy();
-    return reply.send({ ok: true });
+    reply.send({ ok: true });
+  });
+
+  // GET /api/auth/csrf-token — used by the frontend to get a CSRF token
+  // before making state-mutating requests in production.
+  // In dev this route still exists but returns a no-op token.
+  fastify.get("/csrf-token", async (req, reply) => {
+    if (isProd) {
+      const token = reply.generateCsrf();
+      return reply.send({ token });
+    }
+    return reply.send({ token: null });
   });
 };

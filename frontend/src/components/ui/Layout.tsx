@@ -1,10 +1,8 @@
-import type { User } from '../../lib/types.ts'
 import { Navbar } from './Navbar.tsx'
 
 interface LayoutProps {
   children: React.ReactNode
   subHeader?: React.ReactNode
-  user?: User | null
 }
 
 export function Layout({ children, subHeader }: LayoutProps) {

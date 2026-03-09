@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { User } from '../lib/types.ts'
+import { env } from '../env.ts'
 
 export type AuthState = 'pending' | 'authenticated' | 'unauthenticated'
 
@@ -8,16 +9,14 @@ export function useAuth() {
   const [authState, setAuthState] = useState<AuthState>('pending')
 
   useEffect(() => {
-    fetch('/api/auth/me', { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => {
-        if (data.user) {
-          setUser(data.user)
-          setAuthState('authenticated')
-        } else {
-          setUser(null)
-          setAuthState('unauthenticated')
-        }
+    fetch(`${env.apiUrl}/api/auth/me`, { credentials: 'include' })
+      .then(res => {
+        if (!res.ok) throw new Error('unauthenticated')
+        return res.json()
+      })
+      .then((data: User) => {
+        setUser(data)
+        setAuthState('authenticated')
       })
       .catch(() => {
         setUser(null)
@@ -26,7 +25,7 @@ export function useAuth() {
   }, [])
 
   const logout = useCallback(async () => {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    await fetch(`${env.apiUrl}/api/auth/logout`, { method: 'POST', credentials: 'include' })
     setUser(null)
     setAuthState('unauthenticated')
   }, [])

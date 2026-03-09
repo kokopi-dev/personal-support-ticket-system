@@ -1,11 +1,7 @@
 import { useState, useEffect } from 'react'
 import { AdminTable } from '../components/admin/AdminTable.tsx'
-import { getStorage } from '../lib/storage.ts'
+import { storage } from '../lib/storage.ts'
 import type { Ticket } from '../lib/types.ts'
-
-interface AdminPageProps {
-  storageMode: 'local' | 'remote'
-}
 
 interface StatCardProps {
   label: string
@@ -21,18 +17,12 @@ function StatCard({ label, value }: StatCardProps) {
   )
 }
 
-export function AdminPage({ storageMode }: AdminPageProps) {
-  const storage = getStorage(storageMode)
+export function AdminPage() {
   const [tickets, setTickets] = useState<Ticket[]>([])
 
   useEffect(() => {
-    const result = storage.getTickets()
-    if (result instanceof Promise) {
-      result.then(setTickets)
-    } else {
-      setTickets(result)
-    }
-  }, [storageMode])
+    storage.getTickets().then(setTickets)
+  }, [])
 
   const stats = {
     total:      tickets.length,
@@ -48,7 +38,6 @@ export function AdminPage({ storageMode }: AdminPageProps) {
         <p className="mt-0.5 text-sm text-fg-300">All tickets across the system</p>
       </div>
 
-      {/* Stats row */}
       <div className="mb-6 grid grid-cols-4 gap-3">
         <StatCard label="Total"       value={stats.total} />
         <StatCard label="Open"        value={stats.open} />

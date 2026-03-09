@@ -2,14 +2,17 @@ import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import cookie from '@fastify/cookie'
 import session from '@fastify/session'
-import { authMiddleware } from './middleware/auth.ts'
-import { storageMiddleware } from './middleware/storage.ts'
-import { storageModeRouter } from './routes/storageMode.ts'
-import { ticketsRouter } from './routes/tickets.ts'
-import { authRouter } from './routes/auth.ts'
+import csrf from '@fastify/csrf-protection'
+
+import { authMiddleware } from './middleware/auth.js'
+import { storageMiddleware } from './middleware/storage.js'
+import { ticketsRouter } from './routes/tickets.js'
+import { authRouter } from './routes/auth.js'
+import { SqliteSessionStore } from './db/sessionStore.js'
+
+const isProd = process.env.NODE_ENV === 'production'
 
 const app = Fastify({ logger: true })
-const PORT = Number(process.env.PORT) || 4500
 
 await app.register(cors, {
   origin: process.env.FRONTEND_URL ?? 'http://localhost:5173',
@@ -19,20 +22,27 @@ await app.register(cors, {
 await app.register(cookie)
 
 await app.register(session, {
-  secret: process.env.SESSION_SECRET ?? 'dev-secret-change-in-production-min-32-chars!!',
+  secret: process.env.SESSION_SECRET!,
+  store: new SqliteSessionStore(),       // ← persistent SQLite store
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    secure: isProd,                      // HTTPS-only in production
+    sameSite: isProd ? 'strict' : 'lax', // strict in prod, lax in dev
+    maxAge: 7 * 24 * 60 * 60 * 1000,    // 7 days in ms
   },
+  saveUninitialized: false,
 })
+
+if (isProd) {
+  await app.register(csrf, {
+    sessionPlugin: '@fastify/session',
+  })
+}
 
 await app.register(authMiddleware)
 await app.register(storageMiddleware)
 
-await app.register(storageModeRouter, { prefix: '/api/storage-mode' })
-await app.register(ticketsRouter,     { prefix: '/api/tickets' })
-await app.register(authRouter,        { prefix: '/api/auth' })
+await app.register(authRouter, { prefix: '/api/auth' })
+await app.register(ticketsRouter, { prefix: '/api/tickets' })
 
-await app.listen({ port: PORT })
-console.log(`Backend running on http://localhost:${PORT}`)
+await app.listen({ port: 4500, host: 'localhost' })

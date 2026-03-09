@@ -4,7 +4,6 @@ import { Tabs } from './components/ui/Tabs.tsx'
 import { UserPage } from './pages/UserPage.tsx'
 import { AdminPage } from './pages/AdminPage.tsx'
 import { LoginPage } from './pages/LoginPage.tsx'
-import { useStorageMode } from './hooks/useStorageMode.ts'
 import { useAuth } from './hooks/useAuth.ts'
 import { AuthBar } from './components/ui/AuthBar.tsx'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
@@ -16,14 +15,12 @@ function SupportApp() {
   const [activeTab, setActiveTab] = useState<TabValue>('tickets')
   const [showLogin, setShowLogin] = useState(false)
   const { user, authState, logout } = useAuth()
-  const storageMode = useStorageMode()
 
   const urlError = new URLSearchParams(window.location.search).get('error')
 
   if (showLogin || urlError) {
     return (
-      <Layout
-        user={user}>
+      <Layout>
         <LoginPage
           error={urlError}
           onBack={() => {
@@ -35,7 +32,7 @@ function SupportApp() {
     )
   }
 
-  if (authState === 'pending' || storageMode === 'pending') {
+  if (authState === 'pending') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-bg-100">
         <p className="text-sm text-fg-300">Loading...</p>
@@ -43,26 +40,23 @@ function SupportApp() {
     )
   }
 
-  const isGuest = authState === 'unauthenticated'
-
   const tabs: { value: TabValue; label: string }[] = [
     {
       value: 'tickets',
-      label: user ? `${user.username}'s Tickets` : 'My Tickets',
+      label: 'My Tickets',
     },
     { value: 'admin', label: 'Admin' },
   ]
 
   return (
     <Layout
-      user={user}
       subHeader={
-        <AuthBar isGuest={isGuest} onLogin={() => setShowLogin(true)} onLogout={logout} user={user} />
+        <AuthBar user={user} onLogin={() => setShowLogin(true)} onLogout={logout} />
       }
     >
       <Tabs tabs={tabs} active={activeTab} onChange={setActiveTab} />
-      {activeTab === 'tickets' && <UserPage storageMode={storageMode} />}
-      {activeTab === 'admin' && <AdminPage storageMode={storageMode} />}
+      {activeTab === 'tickets' && <UserPage />}
+      {activeTab === 'admin' && <AdminPage />}
     </Layout>
   )
 }
