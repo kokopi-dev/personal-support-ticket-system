@@ -26,6 +26,7 @@ export interface Ticket {
 }
 
 export const TICKET_LIMIT = 10
+export const REPLY_LIMIT = 20
 
 export interface TicketFilters {
   status?: Ticket['status']
@@ -58,5 +59,6 @@ export interface StorageAdapter {
   updateTicket(id: string, patch: Partial<Ticket>): Promise<Ticket | null>
   deleteTicket(id: string): Promise<void>
   getReplies(ticketId: string): Promise<Reply[]>
+  countRepliesByTicket(ticketId: string): Promise<number>
   createReply(data: { ticketId: string; body: string; userId?: string; authorRole: Reply['authorRole'] }): Promise<Reply>
 }

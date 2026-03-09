@@ -131,6 +131,14 @@ export class SQLiteAdapter implements StorageAdapter {
     await db.delete(tickets).where(eq(tickets.id, id));
   }
 
+  async countRepliesByTicket(ticketId: string): Promise<number> {
+    const result = await db
+      .select({ count: count() })
+      .from(ticketReplies)
+      .where(eq(ticketReplies.ticketId, ticketId));
+    return result[0]?.count ?? 0;
+  }
+
   async getReplies(ticketId: string): Promise<Reply[]> {
     const rows = await db
       .select({
@@ -146,9 +154,9 @@ export class SQLiteAdapter implements StorageAdapter {
       .leftJoin(users, eq(ticketReplies.userId, users.id))
       .where(eq(ticketReplies.ticketId, ticketId))
       .orderBy(ticketReplies.createdAt);
-    return rows.map(r => ({
+    return rows.map((r) => ({
       ...r,
-      authorRole: r.authorRole as Reply['authorRole'],
+      authorRole: r.authorRole as Reply["authorRole"],
       username: r.username ?? null,
     }));
   }
@@ -157,7 +165,7 @@ export class SQLiteAdapter implements StorageAdapter {
     ticketId: string;
     body: string;
     userId?: string;
-    authorRole: Reply['authorRole'];
+    authorRole: Reply["authorRole"];
   }): Promise<Reply> {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
@@ -183,7 +191,11 @@ export class SQLiteAdapter implements StorageAdapter {
       .leftJoin(users, eq(ticketReplies.userId, users.id))
       .where(eq(ticketReplies.id, id));
     const row = rows[0]!;
-    return { ...row, authorRole: row.authorRole as Reply['authorRole'], username: row.username ?? null };
+    return {
+      ...row,
+      authorRole: row.authorRole as Reply["authorRole"],
+      username: row.username ?? null,
+    };
   }
 }
 

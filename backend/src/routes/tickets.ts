@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import type { Ticket, TicketType } from "../types.ts";
-import { TICKET_LIMIT } from "../types.ts";
+import { TICKET_LIMIT, REPLY_LIMIT } from "../types.ts";
 import { filterContent, filterBody } from "../middleware/contentFilter.ts";
 
 const PAGE_SIZE = 10;
@@ -142,12 +142,10 @@ export const ticketsRouter: FastifyPluginAsync = async (app) => {
     if (!ticket) return reply.status(404).send({ error: "Not found" });
 
     if (ticket.status === "closed") {
-      return reply
-        .status(409)
-        .send({
-          error: "ticket_closed",
-          message: "Cannot reply to a closed ticket.",
-        });
+      return reply.status(409).send({
+        error: "ticket_closed",
+        message: "Cannot reply to a closed ticket.",
+      });
     }
 
     // Determine role:
@@ -159,6 +157,18 @@ export const ticketsRouter: FastifyPluginAsync = async (app) => {
     if (!isOwner && ticket.userId !== null) {
       return reply.status(403).send({ error: "Forbidden" });
     }
+
+    // Enforce per-ticket reply limit
+    const replyCount = await req.storage.countRepliesByTicket(req.params.id);
+    if (replyCount >= REPLY_LIMIT) {
+      return reply.status(429).send({
+        error: "reply_limit_reached",
+        message: `This ticket has reached the maximum of ${REPLY_LIMIT} replies. Delete the ticket from the Admin tab and open a new one.`,
+        limit: REPLY_LIMIT,
+        current: replyCount,
+      });
+    }
+
     const authorRole: "user" | "support" =
       ticket.userId === null || asSupport ? "support" : "user";
 

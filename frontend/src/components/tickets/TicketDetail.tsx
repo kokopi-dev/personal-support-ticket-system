@@ -3,7 +3,7 @@ import { Badge } from '../ui/Badge.tsx'
 import { Button } from '../ui/Button.tsx'
 import { FAKE_TRANSACTIONS } from './NewTicketForm.tsx'
 import { parseDescription } from '../../lib/ticket.ts'
-import { storage } from '../../lib/storage.ts'
+import { storage, ApiError } from '../../lib/storage.ts'
 import type { Ticket, Reply } from '../../lib/types.ts'
 import { CloseIcon } from '../icons/close.tsx'
 import { TrashIcon } from '../icons/trash.tsx'
@@ -214,9 +214,14 @@ export function TicketDetail({
   const isClosed = ticket.status === 'closed'
   const hasAnyAction = onCloseTicket || onReopenTicket || onDeleteTicket
 
+  const REPLY_LIMIT = 20
+
   const [replies, setReplies] = useState<Reply[]>([])
   const [repliesLoading, setRepliesLoading] = useState(true)
+  const [replyLimitHit, setReplyLimitHit] = useState(false)
   const threadEndRef = useRef<HTMLDivElement>(null)
+
+  const atReplyLimit = replies.length >= REPLY_LIMIT || replyLimitHit
 
   useEffect(() => {
     setRepliesLoading(true)
@@ -231,8 +236,16 @@ export function TicketDetail({
   }, [replies.length])
 
   const handleSendReply = async (replyBody: string) => {
-    const newReply = await storage.createReply(isAuthenticated, ticket.id, replyBody, replyAs === 'support')
-    setReplies(prev => [...prev, newReply])
+    try {
+      const newReply = await storage.createReply(isAuthenticated, ticket.id, replyBody, replyAs === 'support')
+      setReplies(prev => [...prev, newReply])
+    } catch (err) {
+      if (err instanceof ApiError && err.code === 'reply_limit_reached') {
+        setReplyLimitHit(true)
+      } else {
+        throw err
+      }
+    }
   }
 
   return (
@@ -275,7 +288,9 @@ export function TicketDetail({
       <div className="flex flex-col gap-1.5 min-h-0 flex-1">
         <p className="text-xs font-medium text-fg-200 shrink-0">
           Replies {!repliesLoading && replies.length > 0 && (
-            <span className="text-fg-300 font-normal">({replies.length})</span>
+            <span className={`font-normal ${atReplyLimit ? 'text-amber-400' : 'text-fg-300'}`}>
+              ({replies.length} / {REPLY_LIMIT})
+            </span>
           )}
         </p>
         <div className="overflow-y-auto flex-1 min-h-[80px]">
@@ -293,8 +308,20 @@ export function TicketDetail({
       </div>
 
       {/* Compose — hidden for read-only viewers and closed tickets */}
-      {canReply && !isClosed && (
+      {canReply && !isClosed && !atReplyLimit && (
         <ReplyComposer onSend={handleSendReply} />
+      )}
+      {canReply && !isClosed && atReplyLimit && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-900/40 bg-amber-950/30 px-4 py-3 shrink-0">
+          <span className="mt-0.5 text-base leading-none">📭</span>
+          <div className="flex flex-col gap-0.5">
+            <p className="text-xs font-medium text-amber-300">Reply limit reached</p>
+            <p className="text-xs leading-relaxed text-amber-400/80">
+              This ticket has hit the {REPLY_LIMIT}-reply limit. To continue, delete this ticket from the{' '}
+              <span className="font-medium text-amber-300">Admin tab</span> and open a new one.
+            </p>
+          </div>
+        </div>
       )}
       {canReply && isClosed && (
         <p className="text-xs text-fg-300 italic border-t border-border-100 pt-3 shrink-0">
