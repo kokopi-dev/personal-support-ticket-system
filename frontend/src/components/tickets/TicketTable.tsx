@@ -10,10 +10,10 @@ function formatDate(iso: string): string {
 
 interface TicketTableProps {
   tickets: Ticket[]
-  onDelete: (id: string) => void
+  onOpen: (ticket: Ticket) => void
 }
 
-export function TicketTable({ tickets, onDelete }: TicketTableProps) {
+export function TicketTable({ tickets, onOpen }: TicketTableProps) {
   if (tickets.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border border-border-100 bg-bg-200 py-16 text-center">
@@ -36,16 +36,20 @@ export function TicketTable({ tickets, onDelete }: TicketTableProps) {
         </thead>
         <tbody className="divide-y divide-border-100 bg-bg-100">
           {tickets.map((ticket) => (
-            <tr key={ticket.id} className="transition-colors hover:bg-bg-200">
+            <tr
+              key={ticket.id}
+              className="transition-colors hover:bg-bg-200 cursor-pointer"
+              onClick={() => onOpen(ticket)}
+            >
               <td className="px-4 py-3 text-fg-100">{ticket.subject}</td>
               <td className="px-4 py-3"><Badge status={ticket.status} /></td>
               <td className="px-4 py-3 text-xs text-fg-300">{formatDate(ticket.createdAt)}</td>
               <td className="px-4 py-3 text-right">
                 <Button
-                  variant="danger"
-                  onClick={() => onDelete(ticket.id)}
+                  variant="ghost"
+                  onClick={e => { e.stopPropagation(); onOpen(ticket) }}
                 >
-                  Delete
+                  Open
                 </Button>
               </td>
             </tr>

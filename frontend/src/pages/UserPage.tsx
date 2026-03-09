@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react'
 import { Modal } from '../components/ui/Modal.tsx'
 import { Button } from '../components/ui/Button.tsx'
 import { TicketTable } from '../components/tickets/TicketTable.tsx'
+import { TicketDetail } from '../components/tickets/TicketDetail.tsx'
 import { NewTicketForm } from '../components/tickets/NewTicketForm.tsx'
 import { useModal } from '../hooks/useModal.ts'
 import { storage } from '../lib/storage.ts'
 import type { Ticket } from '../lib/types.ts'
 import { PlusIcon } from '../components/icons/plus.tsx'
 
-const TICKET_LIMIT = 3
+const TICKET_LIMIT = 10
 
 interface UserPageProps {
   isAuthenticated: boolean
@@ -65,7 +66,10 @@ function TicketLimitReached({ onClose, fromServer }: { onClose: () => void; from
 export function UserPage({ isAuthenticated }: UserPageProps) {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [serverLimitHit, setServerLimitHit] = useState(false)
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null)
+
   const newTicketModal = useModal()
+  const detailModal = useModal()
 
   const atLimit = isAuthenticated && tickets.length >= TICKET_LIMIT
   const showLimitScreen = atLimit || serverLimitHit
@@ -74,10 +78,27 @@ export function UserPage({ isAuthenticated }: UserPageProps) {
     storage.getTickets().then(setTickets)
   }, [isAuthenticated])
 
-  // Reset server limit flag whenever the modal closes
-  const handleClose = () => {
+  const handleNewClose = () => {
     newTicketModal.close()
     setServerLimitHit(false)
+  }
+
+  const handleOpen = (ticket: Ticket) => {
+    setSelectedTicket(ticket)
+    detailModal.open()
+  }
+
+  const handleDetailClose = () => {
+    detailModal.close()
+    setSelectedTicket(null)
+  }
+
+  const handleCloseTicket = async (id: string) => {
+    const updated = await storage.updateTicket(id, { status: 'closed' })
+    if (updated) {
+      setTickets(prev => prev.map(t => t.id === id ? updated : t))
+      setSelectedTicket(updated)
+    }
   }
 
   const handleCreate = async (form: Pick<Ticket, 'subject' | 'description' | 'type'>) => {
@@ -88,17 +109,10 @@ export function UserPage({ isAuthenticated }: UserPageProps) {
       newTicketModal.close()
     } catch (err: any) {
       if (err?.code === 'ticket_limit_reached') {
-        // Backend rejected — switch the open modal to the limit screen immediately
-        // and re-sync the ticket list so atLimit also becomes true
         setServerLimitHit(true)
         storage.getTickets().then(setTickets)
       }
     }
-  }
-
-  const handleDelete = async (id: string) => {
-    await storage.deleteTicket(id)
-    setTickets(prev => prev.filter(t => t.id !== id))
   }
 
   return (
@@ -126,17 +140,27 @@ export function UserPage({ isAuthenticated }: UserPageProps) {
         </Button>
       </div>
 
-      <TicketTable tickets={tickets} onDelete={handleDelete} />
+      <TicketTable tickets={tickets} onOpen={handleOpen} />
 
+      {/* New ticket modal */}
       <Modal
         isOpen={newTicketModal.isOpen}
-        onClose={handleClose}
+        onClose={handleNewClose}
         title={showLimitScreen ? 'Ticket Limit Reached' : 'New Ticket'}
       >
         {showLimitScreen
-          ? <TicketLimitReached onClose={handleClose} fromServer={serverLimitHit && !atLimit} />
+          ? <TicketLimitReached onClose={handleNewClose} fromServer={serverLimitHit && !atLimit} />
           : <NewTicketForm onSubmit={handleCreate} />
         }
+      </Modal>
+
+      {/* Ticket detail modal */}
+      <Modal
+        isOpen={detailModal.isOpen}
+        onClose={handleDetailClose}
+        title={selectedTicket?.subject ?? ''}
+      >
+        {selectedTicket && <TicketDetail ticket={selectedTicket} onCloseTicket={handleCloseTicket} />}
       </Modal>
     </>
   )

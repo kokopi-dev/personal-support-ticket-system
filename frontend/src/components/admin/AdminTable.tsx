@@ -1,18 +1,11 @@
 import { Badge } from '../ui/Badge.tsx'
+import { parseDescription } from '../../lib/ticket.ts'
 import type { Ticket } from '../../lib/types.ts'
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric'
   })
-}
-
-// Parse transaction reference encoded by NewTicketForm into the description
-// Format: "[Transaction: TXN-XXXXX — Label $X.XX on Date]\n\n..."
-function parseTransaction(description: string): { txnLine: string; body: string } | null {
-  const match = description.match(/^\[Transaction: ([^\]]+)\]\n?\n?(.*)$/s)
-  if (!match) return null
-  return { txnLine: match[1].trim(), body: match[2].trim() }
 }
 
 interface AdminTableProps {
@@ -47,8 +40,8 @@ export function AdminTable({ tickets }: AdminTableProps) {
         </thead>
         <tbody className="divide-y divide-border-100 bg-bg-100">
           {tickets.map(ticket => {
-            const txn = ticket.type === 'billing' ? parseTransaction(ticket.description) : null
-            const displayDescription = txn ? txn.body : ticket.description
+            const { txnId, txnLine, body: displayDescription } = parseDescription(ticket.description)
+            const hasTxn = ticket.type === 'billing' && txnId !== null
 
             return (
               <tr key={ticket.id} className="transition-colors hover:bg-bg-200">
@@ -63,9 +56,9 @@ export function AdminTable({ tickets }: AdminTableProps) {
                 </td>
                 {hasBilling && (
                   <td className="px-4 py-3 text-xs text-fg-200 whitespace-nowrap">
-                    {txn ? (
+                    {hasTxn ? (
                       <span className="inline-flex items-center gap-1.5 rounded-md border border-border-100 bg-bg-300 px-2 py-1 font-mono text-fg-200">
-                        {txn.txnLine.split(' — ')[0]}
+                        {txnLine!.split(' — ')[0]}
                       </span>
                     ) : (
                       <span className="text-fg-300 italic">—</span>
