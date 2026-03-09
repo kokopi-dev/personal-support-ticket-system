@@ -1,8 +1,9 @@
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import type { Ticket, TicketType } from "../types.ts";
 import { TICKET_LIMIT } from "../types.ts";
+import { filterContent } from "../middleware/contentFilter.ts";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 async function requireAuth(req: FastifyRequest, reply: FastifyReply) {
   if (!req.isAuthenticated) {
@@ -82,9 +83,18 @@ export const ticketsRouter: FastifyPluginAsync = async (app) => {
       }
     }
 
+    // Run content filter for authenticated users only
+    const filtered = filterContent(subject.trim(), description);
+    if (!filtered.ok) {
+      return reply.status(400).send({
+        error: filtered.reason,
+        message: filtered.message,
+      });
+    }
+
     const ticket = await req.storage.createTicket({
-      subject: subject.trim(),
-      description,
+      subject: filtered.subject,
+      description: filtered.description,
       type,
       userId: req.user?.id,
     });

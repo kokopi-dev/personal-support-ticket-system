@@ -5,7 +5,7 @@ import { TicketTable } from '../components/tickets/TicketTable.tsx'
 import { TicketDetail } from '../components/tickets/TicketDetail.tsx'
 import { NewTicketForm } from '../components/tickets/NewTicketForm.tsx'
 import { useModal } from '../hooks/useModal.ts'
-import { storage } from '../lib/storage.ts'
+import { storage, ApiError } from '../lib/storage.ts'
 import type { Ticket } from '../lib/types.ts'
 import { PlusIcon } from '../components/icons/plus.tsx'
 
@@ -66,6 +66,7 @@ function TicketLimitReached({ onClose, fromServer }: { onClose: () => void; from
 export function UserPage({ isAuthenticated }: UserPageProps) {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [serverLimitHit, setServerLimitHit] = useState(false)
+  const [contentError, setContentError] = useState<string | null>(null)
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null)
 
   const newTicketModal = useModal()
@@ -81,6 +82,7 @@ export function UserPage({ isAuthenticated }: UserPageProps) {
   const handleNewClose = () => {
     newTicketModal.close()
     setServerLimitHit(false)
+    setContentError(null)
   }
 
   const handleOpen = (ticket: Ticket) => {
@@ -103,14 +105,20 @@ export function UserPage({ isAuthenticated }: UserPageProps) {
 
   const handleCreate = async (form: Pick<Ticket, 'subject' | 'description' | 'type'>) => {
     if (atLimit) return
+    setContentError(null)
     try {
       const ticket = await storage.createTicket(form)
       setTickets(prev => [ticket, ...prev])
       newTicketModal.close()
-    } catch (err: any) {
-      if (err?.code === 'ticket_limit_reached') {
-        setServerLimitHit(true)
-        storage.getTickets().then(setTickets)
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.code === 'ticket_limit_reached') {
+          setServerLimitHit(true)
+          storage.getTickets().then(setTickets)
+        } else if (err.code === 'profanity') {
+          // Surface the server's message directly — it says which field was flagged
+          setContentError(err.message)
+        }
       }
     }
   }
@@ -150,7 +158,17 @@ export function UserPage({ isAuthenticated }: UserPageProps) {
       >
         {showLimitScreen
           ? <TicketLimitReached onClose={handleNewClose} fromServer={serverLimitHit && !atLimit} />
-          : <NewTicketForm onSubmit={handleCreate} />
+          : (
+            <>
+              {contentError && (
+                <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-red-500/30 bg-red-500/10 px-3.5 py-3">
+                  <span className="mt-0.5 text-sm">🚫</span>
+                  <p className="text-xs leading-relaxed text-red-400">{contentError}</p>
+                </div>
+              )}
+              <NewTicketForm onSubmit={handleCreate} />
+            </>
+          )
         }
       </Modal>
 

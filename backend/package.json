@@ -10,6 +10,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@2toad/profanity": "^3.2.0",
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "latest",
     "@fastify/csrf-protection": "^7.1.0",

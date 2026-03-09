@@ -25,7 +25,7 @@ export interface Ticket {
   createdAt: string
 }
 
-export const TICKET_LIMIT = 3
+export const TICKET_LIMIT = 10
 
 export interface TicketFilters {
   status?: Ticket['status']
