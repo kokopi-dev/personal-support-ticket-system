@@ -15,20 +15,16 @@ services:
       - db_data:/app/data
     restart: unless-stopped
 
-  frontend:
+  # One-shot build container — not a running service.
+  # Run: docker compose run --rm frontend-builder
+  # Then copy dist/ to wherever nginx serves static files from.
+  frontend-builder:
     build:
       context: ./frontend
-      args:
-        # Baked into the Vite bundle at build time.
-        # Compose reads this from the root .env file.
-        VITE_API_URL: ${VITE_API_URL}
-    env_file:
-      - ./frontend/.env
-    ports:
-      - "4501:4501"
-    depends_on:
-      - backend
-    restart: unless-stopped
+    profiles:
+      - build
+    volumes:
+      - ./frontend/dist:/app/dist
 
 volumes:
   db_data:

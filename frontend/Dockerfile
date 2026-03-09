@@ -12,17 +12,3 @@ COPY .env ./
 
 RUN bun install --frozen-lockfile
 RUN bun run build
-
-# ---- serve ----
-FROM oven/bun:1-alpine
-
-WORKDIR /app
-
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/vite.config.ts ./
-
-EXPOSE 4501
-
-CMD ["bun", "run", "node_modules/.bin/vite", "preview", "--host", "0.0.0.0", "--port", "4501"]
