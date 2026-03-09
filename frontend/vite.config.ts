@@ -11,6 +11,7 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  base: "/projects/support-ticket-demo/",
   preview: {
     allowedHosts: ["derrickgee.dev"],
   },
