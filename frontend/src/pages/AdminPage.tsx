@@ -7,11 +7,12 @@ import type { PaginatedResponse, TicketFilters } from '../lib/storage.ts'
 import { useModal } from '../hooks/useModal.ts'
 import type { Ticket, User } from '../lib/types.ts'
 import { Button } from '../components/ui/Button.tsx'
+import { ChevronIcon } from '../components/icons/chevronIcon.tsx'
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-border-100 bg-bg-200 px-4 py-3">
-      <p className="text-xs text-fg-300">{label}</p>
+    <div className="rounded-lg border border-border-100 bg-bg-200 sm:px-4 px-1.5 sm:py-3 py-1.5 overflow-hidden">
+      <p className="text-xs text-fg-300 truncate">{label}</p>
       <p className="mt-1 text-2xl font-semibold text-fg-100">{value}</p>
     </div>
   )
@@ -61,7 +62,7 @@ function FilterBar({ filters, isAuthenticated, onChange }: FilterBarProps) {
         >
           {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
-        <ChevronIcon />
+        <ChevronIcon className="size-4 pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-fg-300" />
       </div>
 
       {/* Type */}
@@ -73,7 +74,7 @@ function FilterBar({ filters, isAuthenticated, onChange }: FilterBarProps) {
         >
           {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
-        <ChevronIcon />
+        <ChevronIcon className="size-4 pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-fg-300" />
       </div>
 
       {/* Mine toggle — only visible when authenticated */}
@@ -109,17 +110,6 @@ function FilterBar({ filters, isAuthenticated, onChange }: FilterBarProps) {
         </button>
       )}
     </div>
-  )
-}
-
-function ChevronIcon() {
-  return (
-    <svg
-      className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-fg-300"
-      width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"
-    >
-      <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   )
 }
 

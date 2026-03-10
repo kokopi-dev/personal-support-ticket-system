@@ -14,7 +14,7 @@ interface BadgeProps {
 export function Badge({ status }: BadgeProps) {
   return (
     <span className={`
-      inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize
+      inline-flex whitespace-nowrap items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize
       ${variants[status]}
     `}>
       {status}

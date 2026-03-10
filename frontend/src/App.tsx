@@ -9,6 +9,7 @@ import { useAuth } from './hooks/useAuth.ts'
 import { AuthBar } from './components/ui/AuthBar.tsx'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { NotFound } from './pages/NotFound.tsx'
+import { InfoBar } from './components/ui/InfoBar.tsx'
 
 type TabValue = 'tickets' | 'admin' | 'stats'
 
@@ -50,7 +51,10 @@ function SupportApp() {
   return (
     <Layout
       subHeader={
-        <AuthBar user={user} onLogin={() => setShowLogin(true)} onLogout={logout} />
+        <>
+          <AuthBar user={user} onLogin={() => setShowLogin(true)} onLogout={logout} />
+          <InfoBar user={user} />
+        </>
       }
     >
       <Tabs tabs={tabs} active={activeTab} onChange={setActiveTab} />

@@ -115,98 +115,100 @@ export function AdminTable({
   const hasBilling = tickets.some(t => t.type === 'billing')
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border-100">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-border-100 bg-bg-200">
-            {/* Select-all checkbox */}
-            <th className="w-10 px-4 py-3">
-              <Checkbox
-                checked={allSelected}
-                indeterminate={someSelected}
-                disabled={selectableIds.length === 0}
-                onChange={handleHeaderChange}
-                ariaLabel="Select all owned tickets on this page"
-              />
-            </th>
-            {(['Subject', 'User', 'Type', 'Status', ...(hasBilling ? ['Transaction'] : []), 'Description', 'Created'] as const).map(col => (
-              <th
-                key={col}
-                className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-fg-300"
-              >
-                {col}
+    <div className="rounded-lg border border-border-100 overflow-hidden">
+      <div className="overflow-x-auto overflow-y-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border-100 bg-bg-200">
+              {/* Select-all checkbox */}
+              <th className="w-10 px-4 py-3">
+                <Checkbox
+                  checked={allSelected}
+                  indeterminate={someSelected}
+                  disabled={selectableIds.length === 0}
+                  onChange={handleHeaderChange}
+                  ariaLabel="Select all owned tickets on this page"
+                />
               </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border-100 bg-bg-100">
-          {tickets.map(ticket => {
-            const { txnId, txnLine, body: displayDescription } = parseDescription(ticket.description)
-            const hasTxn = ticket.type === 'billing' && txnId !== null
-            const owned = isOwned(ticket)
-            const isSelected = selection.has(ticket.id)
-
-            return (
-              <tr
-                key={ticket.id}
-                className={`transition-colors cursor-pointer ${isSelected ? 'bg-bg-200' : 'hover:bg-bg-200'}`}
-                onClick={() => onOpen(ticket)}
-              >
-                {/* Row checkbox — stop propagation so clicking it doesn't open the modal */}
-                <td
-                  className="w-10 px-4 py-3"
-                  onClick={e => e.stopPropagation()}
+              {(['Subject', 'User', 'Type', 'Status', ...(hasBilling ? ['Transaction'] : []), 'Description', 'Created'] as const).map(col => (
+                <th
+                  key={col}
+                  className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-fg-300"
                 >
-                  <Checkbox
-                    checked={isSelected}
-                    disabled={!owned}
-                    onChange={checked => handleRowChange(ticket.id, checked)}
-                    ariaLabel={`Select ticket: ${ticket.subject}`}
-                  />
-                </td>
-                <td className="px-4 py-3 font-medium text-fg-100">
-                  <div className="flex items-center gap-2">
-                    {ticket.subject}
-                    {owned && (
-                      <span className="inline-flex items-center rounded-full border border-border-100 bg-bg-300 px-1.5 py-0.5 text-[10px] font-medium text-fg-300">
-                        mine
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-xs text-fg-200 whitespace-nowrap">
-                  {ticket.username ?? <span className="italic text-fg-300">guest</span>}
-                </td>
-                <td className="px-4 py-3 text-xs capitalize text-fg-200">
-                  {ticket.type.replace('-', ' ')}
-                </td>
-                <td className="px-4 py-3">
-                  <Badge status={ticket.status} />
-                </td>
-                {hasBilling && (
-                  <td className="px-4 py-3 text-xs text-fg-200 whitespace-nowrap">
-                    {hasTxn ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-md border border-border-100 bg-bg-300 px-2 py-1 font-mono text-fg-200">
-                        {txnLine!.split(' — ')[0]}
-                      </span>
-                    ) : (
-                      <span className="text-fg-300 italic">—</span>
-                    )}
+                  {col}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border-100 bg-bg-100">
+            {tickets.map(ticket => {
+              const { txnId, txnLine, body: displayDescription } = parseDescription(ticket.description)
+              const hasTxn = ticket.type === 'billing' && txnId !== null
+              const owned = isOwned(ticket)
+              const isSelected = selection.has(ticket.id)
+
+              return (
+                <tr
+                  key={ticket.id}
+                  className={`transition-colors cursor-pointer ${isSelected ? 'bg-bg-200' : 'hover:bg-bg-200'}`}
+                  onClick={() => onOpen(ticket)}
+                >
+                  {/* Row checkbox — stop propagation so clicking it doesn't open the modal */}
+                  <td
+                    className="w-10 px-4 py-3"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <Checkbox
+                      checked={isSelected}
+                      disabled={!owned}
+                      onChange={checked => handleRowChange(ticket.id, checked)}
+                      ariaLabel={`Select ticket: ${ticket.subject}`}
+                    />
                   </td>
-                )}
-                <td className="max-w-xs px-4 py-3 text-xs text-fg-300">
-                  <span className="line-clamp-2">
-                    {displayDescription || <span className="italic">No description</span>}
-                  </span>
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 text-xs text-fg-300">
-                  {formatDate(ticket.createdAt)}
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+                  <td className="px-4 py-3 font-medium text-fg-100">
+                    <div className="flex items-center gap-2">
+                      {ticket.subject}
+                      {owned && (
+                        <span className="inline-flex items-center rounded-full border border-border-100 bg-bg-300 px-1.5 py-0.5 text-[10px] font-medium text-fg-300">
+                          mine
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-fg-200 whitespace-nowrap">
+                    {ticket.username ?? <span className="italic text-fg-300">guest</span>}
+                  </td>
+                  <td className="px-4 py-3 text-xs capitalize text-fg-200">
+                    {ticket.type.replace('-', ' ')}
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge status={ticket.status} />
+                  </td>
+                  {hasBilling && (
+                    <td className="px-4 py-3 text-xs text-fg-200 whitespace-nowrap">
+                      {hasTxn ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-md border border-border-100 bg-bg-300 px-2 py-1 font-mono text-fg-200">
+                          {txnLine!.split(' — ')[0]}
+                        </span>
+                      ) : (
+                        <span className="text-fg-300 italic">—</span>
+                      )}
+                    </td>
+                  )}
+                  <td className="max-w-xs px-4 py-3 text-xs text-fg-300">
+                    <span className="line-clamp-2">
+                      {displayDescription || <span className="italic">No description</span>}
+                    </span>
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-xs text-fg-300">
+                    {formatDate(ticket.createdAt)}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
 
       {/* Pagination footer */}
       <div className="flex items-center justify-between border-t border-border-100 bg-bg-200 px-4 py-3">
