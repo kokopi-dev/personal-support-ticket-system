@@ -140,7 +140,7 @@ function ReplyBubble({ reply }: { reply: Reply }) {
           : 'bg-bg-300 border border-border-100'
         }
       `}>
-        <p className="text-sm text-fg-100 leading-relaxed whitespace-pre-wrap">{reply.body}</p>
+        <p className="text-sm text-fg-100 leading-relaxed whitespace-pre-wrap break-words">{reply.body}</p>
       </div>
       <p className="text-[10px] text-fg-300 px-1">
         {isSupport ? 'Support' : (reply.username ?? 'You')} · {formatTime(reply.createdAt)}
