@@ -60,7 +60,7 @@ export function InfoBar({ user }: InfoBarProps) {
                   <p className="text-xs text-fg-300">
                     Tickets are stored in your browser (localStorage) only.
                     No sync across devices or sessions.
-                    Admin panel is not available.
+                    Admin panel manages only your tickets.
                   </p>
                 </div>
                 <div>
@@ -77,13 +77,13 @@ export function InfoBar({ user }: InfoBarProps) {
                 <div>
                   <p className="text-xs font-medium text-fg-200">Admin Tab</p>
                   <p className="text-xs text-fg-300">
-                    You can view all users' tickets in the Admin tab. Useful for monitoring support requests
+                    You can view all users' tickets in the Admin tab. Useful for monitoring support requests.
                   </p>
                 </div>
                 <div>
                   <p className="text-xs font-medium text-fg-200 pr-1">Editing</p>
                   <p className="text-xs text-fg-300">
-                    You can only edit or manage your own tickets. Other users' tickets are read-only for you
+                    You can only edit or manage your own tickets. Other users' tickets are read-only for you.
                   </p>
                 </div>
               </div>
