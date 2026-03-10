@@ -2,6 +2,20 @@ import { useState } from 'react'
 import { Button } from '../ui/Button.tsx'
 import type { Ticket, TicketType } from '../../lib/types.ts'
 
+const SUBJECT_MAX = 128
+const DESCRIPTION_MAX = 2000
+
+function CharCount({ current, max }: { current: number; max: number }) {
+  const remaining = max - current
+  const isWarning = remaining <= max * 0.1  // warn in the last 10%
+  const isOver = remaining < 0
+  return (
+    <span className={`text-xs tabular-nums ${isOver ? 'text-red-400' : isWarning ? 'text-amber-400' : 'text-fg-300'}`}>
+      {current}/{max}
+    </span>
+  )
+}
+
 // ─── Fake transactions ────────────────────────────────────────────────────────
 
 export interface FakeTransaction {
@@ -12,9 +26,9 @@ export interface FakeTransaction {
 }
 
 export const FAKE_TRANSACTIONS: FakeTransaction[] = [
-  { id: 'TXN-48291', label: 'Pro Plan — Monthly',   amount: '$12.00', date: 'Mar 1, 2026'  },
-  { id: 'TXN-47103', label: 'Add-on: Extra Storage', amount: '$4.99',  date: 'Feb 15, 2026' },
-  { id: 'TXN-45882', label: 'Pro Plan — Monthly',   amount: '$12.00', date: 'Feb 1, 2026'  },
+  { id: 'TXN-48291', label: 'Pro Plan — Monthly', amount: '$12.00', date: 'Mar 1, 2026' },
+  { id: 'TXN-47103', label: 'Add-on: Extra Storage', amount: '$4.99', date: 'Feb 15, 2026' },
+  { id: 'TXN-45882', label: 'Pro Plan — Monthly', amount: '$12.00', date: 'Feb 1, 2026' },
 ]
 
 // ─── Step definitions ─────────────────────────────────────────────────────────
@@ -96,9 +110,8 @@ function StepIndicator({ step, total }: { step: number; total: number }) {
         <div
           key={i}
           style={{ transition: 'background-color 0.4s ease' }}
-          className={`h-0.5 flex-1 rounded-full ${
-            i < step ? 'bg-fg-100' : i === step ? 'bg-fg-300' : 'bg-border-100'
-          }`}
+          className={`h-0.5 flex-1 rounded-full ${i < step ? 'bg-fg-100' : i === step ? 'bg-fg-300' : 'bg-border-100'
+            }`}
         />
       ))}
     </div>
@@ -128,7 +141,7 @@ function OptionCard({ icon, label, description, onClick }: OptionCardProps) {
         className="ml-auto mt-1 shrink-0 text-fg-300 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
         width="14" height="14" viewBox="0 0 14 14" fill="none"
       >
-        <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </button>
   )
@@ -269,14 +282,18 @@ export function NewTicketForm({ onSubmit }: NewTicketFormProps) {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-fg-200">
-              Subject <span className="text-fg-300 font-normal">(required)</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-fg-200">
+                Subject <span className="text-fg-300 font-normal">(required)</span>
+              </label>
+              <CharCount current={form.subject.length} max={SUBJECT_MAX} />
+            </div>
             <input
               className={inputClass}
               placeholder="Brief summary of the issue"
               value={form.subject}
               onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}
+              maxLength={SUBJECT_MAX}
               autoFocus
               required
             />
@@ -304,7 +321,7 @@ export function NewTicketForm({ onSubmit }: NewTicketFormProps) {
                   className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-fg-300"
                   width="12" height="12" viewBox="0 0 12 12" fill="none"
                 >
-                  <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
               {selectedTxn && (() => {
@@ -323,14 +340,18 @@ export function NewTicketForm({ onSubmit }: NewTicketFormProps) {
           )}
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-fg-200">
-              Description <span className="text-fg-300 font-normal">(optional)</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-fg-200">
+                Description <span className="text-fg-300 font-normal">(optional)</span>
+              </label>
+              <CharCount current={form.description.length} max={DESCRIPTION_MAX} />
+            </div>
             <textarea
               className={`${inputClass} min-h-24 resize-y`}
               placeholder="Describe what happened, what you expected, and any steps to reproduce..."
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              maxLength={DESCRIPTION_MAX}
               rows={4}
             />
           </div>

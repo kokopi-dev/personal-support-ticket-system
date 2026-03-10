@@ -9,6 +9,19 @@ import { CloseIcon } from '../icons/close.tsx'
 import { TrashIcon } from '../icons/trash.tsx'
 import { CircleArrowIcon } from '../icons/circleArrow.tsx'
 
+const REPLY_MAX = 1000
+
+function CharCount({ current, max }: { current: number; max: number }) {
+  const remaining = max - current
+  const isWarning = remaining <= max * 0.1
+  const isOver = remaining < 0
+  return (
+    <span className={`text-xs tabular-nums ${isOver ? 'text-red-400' : isWarning ? 'text-amber-400' : 'text-fg-300'}`}>
+      {current}/{max}
+    </span>
+  )
+}
+
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', {
     month: 'long', day: 'numeric', year: 'numeric',
@@ -147,8 +160,10 @@ function ReplyComposer({ onSend, disabled }: ReplyComposerProps) {
   const [error, setError] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  const isOverLimit = body.length > REPLY_MAX
+
   const handleSend = async () => {
-    if (!body.trim() || sending) return
+    if (!body.trim() || sending || isOverLimit) return
     setSending(true)
     setError(null)
     try {
@@ -179,10 +194,12 @@ function ReplyComposer({ onSend, disabled }: ReplyComposerProps) {
         disabled={disabled || sending}
         placeholder="Write a reply… (⌘Enter to send)"
         rows={3}
+        maxLength={REPLY_MAX}
         className="w-full rounded-md border border-border-100 bg-bg-300 px-3 py-2 text-sm text-fg-100 placeholder:text-fg-300 outline-none transition-colors focus:border-border-200 focus:ring-1 focus:ring-ring-100 resize-none disabled:opacity-50"
       />
-      <div className="flex justify-end">
-        <Button onClick={handleSend} disabled={!body.trim() || sending || disabled}>
+      <div className="flex items-center justify-between">
+        <CharCount current={body.length} max={REPLY_MAX} />
+        <Button onClick={handleSend} disabled={!body.trim() || sending || disabled || isOverLimit}>
           {sending ? 'Sending…' : 'Send Reply'}
         </Button>
       </div>

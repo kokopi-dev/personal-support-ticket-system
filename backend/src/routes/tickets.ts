@@ -1,6 +1,12 @@
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import type { Ticket, TicketType } from "../types.ts";
-import { TICKET_LIMIT, REPLY_LIMIT } from "../types.ts";
+import {
+  TICKET_LIMIT,
+  REPLY_LIMIT,
+  SUBJECT_MAX_LENGTH,
+  DESCRIPTION_MAX_LENGTH,
+  REPLY_MAX_LENGTH,
+} from "../types.ts";
 import { filterContent, filterBody } from "../middleware/contentFilter.ts";
 
 const PAGE_SIZE = 10;
@@ -70,6 +76,22 @@ export const ticketsRouter: FastifyPluginAsync = async (app) => {
       return reply.status(400).send({ error: "subject is required" });
     }
 
+    if (subject.trim().length > SUBJECT_MAX_LENGTH) {
+      return reply.status(400).send({
+        error: "subject_too_long",
+        message: `Subject must be ${SUBJECT_MAX_LENGTH} characters or fewer.`,
+        max: SUBJECT_MAX_LENGTH,
+      });
+    }
+
+    if (description.length > DESCRIPTION_MAX_LENGTH) {
+      return reply.status(400).send({
+        error: "description_too_long",
+        message: `Description must be ${DESCRIPTION_MAX_LENGTH} characters or fewer.`,
+        max: DESCRIPTION_MAX_LENGTH,
+      });
+    }
+
     // Enforce per-user ticket limit
     if (req.user?.id) {
       const userTicketCount = await req.storage.countTicketsByUser(req.user.id);
@@ -136,6 +158,14 @@ export const ticketsRouter: FastifyPluginAsync = async (app) => {
     const { body, asSupport = false } = req.body;
     if (!body?.trim()) {
       return reply.status(400).send({ error: "body is required" });
+    }
+
+    if (body.trim().length > REPLY_MAX_LENGTH) {
+      return reply.status(400).send({
+        error: "reply_too_long",
+        message: `Reply must be ${REPLY_MAX_LENGTH} characters or fewer.`,
+        max: REPLY_MAX_LENGTH,
+      });
     }
 
     const ticket = await req.storage.getTicket(req.params.id);

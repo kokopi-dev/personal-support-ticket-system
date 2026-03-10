@@ -55,7 +55,7 @@ export function InfoBar({ user }: InfoBarProps) {
           <div className="max-w-4xl px-6 mx-auto">
             {isGuest ? (
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-5 px-2">
-                <div>
+                <div className="w-full">
                   <p className="text-xs font-medium text-fg-200">Guest mode</p>
                   <p className="text-xs text-fg-300">
                     Tickets are stored in your browser (localStorage) only.
@@ -63,7 +63,7 @@ export function InfoBar({ user }: InfoBarProps) {
                     Admin panel manages only your tickets.
                   </p>
                 </div>
-                <div>
+                <div className="w-full">
                   <p className="text-xs font-medium text-fg-200">After signing in</p>
                   <p className="text-xs text-fg-300">
                     Tickets are saved to the server persistently.
@@ -74,13 +74,14 @@ export function InfoBar({ user }: InfoBarProps) {
               </div>
             ) : (
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-5 px-2">
-                <div>
-                  <p className="text-xs font-medium text-fg-200">Admin Tab</p>
+                <div className="w-full">
+                  <p className="text-xs font-medium text-fg-200">Tickets and Admin Tab</p>
                   <p className="text-xs text-fg-300">
-                    You can view all users' tickets in the Admin tab. Useful for monitoring support requests.
+                    Can create 10 tickets max, each ticket can have 20 replies max.
+                    You can view all user tickets in the Admin tab. Useful for monitoring support requests.
                   </p>
                 </div>
-                <div>
+                <div className="w-full">
                   <p className="text-xs font-medium text-fg-200 pr-1">Editing</p>
                   <p className="text-xs text-fg-300">
                     You can only edit or manage your own tickets. Other users' tickets are read-only for you.
