@@ -23,7 +23,7 @@ export function TicketTable({ tickets, onOpen }: TicketTableProps) {
   }
 
   return (
-    <div className="overflow-x-scroll overflow-y-hidden rounded-lg border border-border-100">
+    <div className="overflow-y-hidden rounded-lg border border-border-100">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border-100 bg-bg-200">

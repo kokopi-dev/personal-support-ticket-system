@@ -116,7 +116,7 @@ export function AdminTable({
 
   return (
     <div className="rounded-lg border border-border-100 overflow-hidden">
-      <div className="overflow-x-auto overflow-y-hidden">
+      <div className="overflow-y-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border-100 bg-bg-200">
