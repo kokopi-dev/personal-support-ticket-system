@@ -2,5 +2,5 @@ import { Database } from 'bun:sqlite'
 import { drizzle } from 'drizzle-orm/bun-sqlite'
 import { tickets, users, sessions, ticketReplies } from './schema.ts'
 
-const sqlite = new Database('app.db')
+const sqlite = new Database(process.env.DB_PATH ?? 'app.db')
 export const db = drizzle(sqlite, { schema: { tickets, users, sessions, ticketReplies } })
