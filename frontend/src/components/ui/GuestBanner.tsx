@@ -1,4 +1,5 @@
 import { InfoIcon } from "../icons/info"
+import { Button } from "./Button"
 
 interface GuestBannerProps {
   onLogin: () => void
@@ -15,12 +16,9 @@ export function GuestBanner({ onLogin }: GuestBannerProps) {
             You're in guest mode — tickets are stored locally in your browser.
           </p>
         </div>
-        <button
-          onClick={onLogin}
-          className="ml-4 shrink-0 rounded-md bg-bg-300 px-3 py-1.5 text-xs font-medium text-fg-100 transition-colors hover:bg-bg-400 cursor-pointer"
-        >
+        <Button onClick={onLogin} variant="primary">
           Sign in with Google
-        </button>
+        </Button>
       </div>
     </div>
   )
