@@ -16,10 +16,14 @@ export class ApiError extends Error {
 }
 
 async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const hasBody = init.body != null;
   const res = await fetch(`${API}${path}`, {
     ...init,
     credentials: "include",
-    headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
+    headers: {
+      ...(hasBody ? { "Content-Type": "application/json" } : {}),
+      ...(init.headers ?? {}),
+    },
   });
   if (!res.ok) {
     // Try to parse a structured error body; fall back to a generic message
@@ -34,6 +38,9 @@ async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
     }
     throw new ApiError(res.status, code, message);
   }
+
+  // delete
+  if (res.status === 204) return undefined as T;
   return res.json();
 }
 
